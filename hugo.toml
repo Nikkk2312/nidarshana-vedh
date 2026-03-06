@@ -1,0 +1,50 @@
+baseURL = "https://nidarshanavedh.com/"
+languageCode = "en-us"
+title = "Nidarshana Vedh"
+paginate = 12
+enableRobotsTXT = true
+enableEmoji = true
+
+[params]
+  tagline = "The Evidence is Written in Your Stars"
+  description = "Premium Vedic astrology for self-improvement, karmic insight, and life guidance. Free tools, deep content, and personalized consultations."
+  author = "Nidarshana Vedh"
+
+[menu]
+  [[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+  [[menu.main]]
+    name = "About"
+    url = "/about/"
+    weight = 2
+  [[menu.main]]
+    name = "Blog"
+    url = "/blog/"
+    weight = 3
+  [[menu.main]]
+    name = "Free Tools"
+    url = "/tools/"
+    weight = 4
+  [[menu.main]]
+    name = "Consultation"
+    url = "/consultation/"
+    weight = 5
+  [[menu.main]]
+    name = "Courses"
+    url = "/courses/"
+    weight = 6
+  [[menu.main]]
+    name = "Contact"
+    url = "/contact/"
+    weight = 7
+
+[taxonomies]
+  category = "categories"
+  tag = "tags"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true

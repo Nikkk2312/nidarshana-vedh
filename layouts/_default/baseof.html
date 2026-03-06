@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ if .IsHome }}Nidarshana Vedh | Vedic Astrology{{ else }}{{ .Title }} | Nidarshana Vedh{{ end }}</title>
+  <meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="/" class="nav-brand">
+        <div class="nav-brand-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="38" height="38"><path d="M50 8 L50 75" stroke="#C49A2C" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M50 30 Q38 22 32 10" stroke="#C49A2C" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M50 30 Q62 22 68 10" stroke="#C49A2C" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M32 10 L29 5 L35 8 Z" fill="#B83A2A"/><path d="M68 10 L71 5 L65 8 Z" fill="#B83A2A"/><path d="M50 8 L47 2 L50 0 L53 2 Z" fill="#B83A2A"/><ellipse cx="50" cy="40" rx="10" ry="3" fill="none" stroke="#C49A2C" stroke-width="2"/><ellipse cx="50" cy="52" rx="4" ry="2.5" fill="none" stroke="#B83A2A" stroke-width="1.5"/><circle cx="50" cy="52" r="1.2" fill="#C49A2C"/><path d="M44 75 Q50 80 56 75" stroke="#C49A2C" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+        <div class="nav-brand-text">Nidarshana <span>Vedh</span></div>
+      </a>
+      <ul class="nav-links">
+        {{ range .Site.Menus.main }}
+        <li><a href="{{ .URL }}" {{ if eq .Name "Consultation" }}class="nav-cta"{{ end }}>{{ .Name }}</a></li>
+        {{ end }}
+      </ul>
+      <button class="nav-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    {{ block "main" . }}{{ end }}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="nav-brand">
+            <div class="nav-brand-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="38" height="38"><path d="M50 8 L50 75" stroke="#C49A2C" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M50 30 Q38 22 32 10" stroke="#C49A2C" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M50 30 Q62 22 68 10" stroke="#C49A2C" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M32 10 L29 5 L35 8 Z" fill="#B83A2A"/><path d="M68 10 L71 5 L65 8 Z" fill="#B83A2A"/><path d="M50 8 L47 2 L50 0 L53 2 Z" fill="#B83A2A"/><ellipse cx="50" cy="40" rx="10" ry="3" fill="none" stroke="#C49A2C" stroke-width="2"/><ellipse cx="50" cy="52" rx="4" ry="2.5" fill="none" stroke="#B83A2A" stroke-width="1.5"/><circle cx="50" cy="52" r="1.2" fill="#C49A2C"/><path d="M44 75 Q50 80 56 75" stroke="#C49A2C" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+            <div class="nav-brand-text">Nidarshana <span>Vedh</span></div>
+          </div>
+          <p>Premium Vedic astrology for self-improvement, karmic insight, and life guidance. Ancient wisdom, modern clarity.</p>
+        </div>
+        <div>
+          <h4>Explore</h4>
+          <ul class="footer-links">
+            <li><a href="/about/">About</a></li>
+            <li><a href="/blog/">Blog</a></li>
+            <li><a href="/tools/">Free Tools</a></li>
+            <li><a href="/consultation/">Book a Session</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Topics</h4>
+          <ul class="footer-links">
+            <li><a href="/niches/self-improvement/">Self-Improvement</a></li>
+            <li><a href="/niches/career-transitions/">Career & Business</a></li>
+            <li><a href="/niches/karmic-patterns/">Karmic Patterns</a></li>
+            <li><a href="/niches/wealth-prosperity/">Wealth & Prosperity</a></li>
+            <li><a href="/niches/divorce-relationships/">Relationships</a></li>
+            <li><a href="/niches/medical-astrology/">Medical Astrology</a></li>
+            <li><a href="/niches/sleep-energy-addiction/">Sleep & Addiction</a></li>
+            <li><a href="/niches/immigration-foreign-settlement/">Immigration</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Connect</h4>
+          <ul class="footer-links">
+            <li><a href="/contact/">Contact</a></li>
+            <li><a href="/courses/">Courses</a></li>
+            <li><a href="#">Instagram</a></li>
+            <li><a href="#">YouTube</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; {{ now.Year }} Nidarshana Vedh. All rights reserved.</span>
+        <p class="footer-mantra">ॐ काल भैरवाय नमः | Om Kaal Bhairavaay Namah</p>
+        <p class="footer-mantra">ॐ नमो भगवते वासुदेवाय नमः | Om Namo Bhagavate Vaasudevaay Namah</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram">IG</a>
+          <a href="#" aria-label="YouTube">YT</a>
+          <a href="#" aria-label="Facebook">FB</a>
+          <a href="#" aria-label="Twitter">X</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Sticky Mobile CTA -->
+  <div class="sticky-cta">
+    <a href="/consultation/" class="btn btn-primary">Book a Consultation</a>
+  </div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

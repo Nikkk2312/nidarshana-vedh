@@ -1,0 +1,15 @@
+{{ define "main" }}
+<div class="page-header">
+  <div class="container">
+    <p class="page-mantras">ॐ काल भैरवाय नमः &nbsp;·&nbsp; ॐ नमो भगवते वासुदेवाय नमः</p>
+    <h1>{{ .Title }}</h1>
+    {{ with .Params.subtitle }}<p>{{ . }}</p>{{ end }}
+    <div class="section-line" style="margin-top: 1.5rem;"></div>
+  </div>
+</div>
+<section class="section" style="padding-top: 0;">
+  <div class="container-narrow">
+    {{ .Content }}
+  </div>
+</section>
+{{ end }}

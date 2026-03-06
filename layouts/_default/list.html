@@ -1,0 +1,29 @@
+{{ define "main" }}
+<div class="page-header">
+  <div class="container">
+    <p class="page-mantras">ॐ काल भैरवाय नमः &nbsp;·&nbsp; ॐ नमो भगवते वासुदेवाय नमः</p>
+    <p class="section-label">Insights & Analysis</p>
+    <h1>The Blog</h1>
+    <p>Deep dives into Vedic astrology: self-improvement, karmic patterns, relationships, wealth, health, and more.</p>
+    <div class="section-line" style="margin-top: 1.5rem;"></div>
+  </div>
+</div>
+<section class="section" style="padding-top: 0;">
+  <div class="container">
+    <div class="blog-grid">
+      {{ range .Pages }}
+      <a href="{{ .Permalink }}" class="blog-card fade-in" style="text-decoration: none;">
+        <div class="blog-card-img">{{ with .Params.icon }}{{ . }}{{ else }}✦{{ end }}</div>
+        <div class="blog-card-body">
+          {{ with .Params.categories }}<p class="blog-card-category">{{ index . 0 }}</p>{{ end }}
+          <h3>{{ .Title }}</h3>
+          <p>{{ .Summary | truncate 120 }}</p>
+          <p class="blog-card-meta">{{ .ReadingTime }} min read · {{ .Date.Format "Jan 2, 2006" }}</p>
+        </div>
+      </a>
+      {{ end }}
+    </div>
+    {{ template "_internal/pagination.html" . }}
+  </div>
+</section>
+{{ end }}
