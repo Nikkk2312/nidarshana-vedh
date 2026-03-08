@@ -1,0 +1,377 @@
+{{ define "main" }}
+<div class="page-header">
+  <div class="container">
+    <p class="page-mantras">ॐ काल भैरवाय नमः &nbsp;·&nbsp; ॐ नमो भगवते वासुदेवाय नमः</p>
+    <h1>{{ .Title }}</h1>
+    {{ with .Params.subtitle }}<p>{{ . }}</p>{{ end }}
+    <div class="section-line" style="margin-top: 1.5rem;"></div>
+  </div>
+</div>
+
+<section class="section" style="padding-top: 0;">
+  <div class="container">
+
+    <!-- Tool Selector Tabs -->
+    <div class="tool-tabs fade-in">
+      <button class="tool-tab active" data-tab="birthchart" onclick="switchTab('birthchart')">
+        <span class="tool-tab-icon">◉</span>
+        <span class="tool-tab-label">Birth Chart (Kundali)</span>
+      </button>
+      <button class="tool-tab" data-tab="compatibility" onclick="switchTab('compatibility')">
+        <span class="tool-tab-icon">⊛</span>
+        <span class="tool-tab-label">Marriage Compatibility</span>
+      </button>
+    </div>
+
+    <!-- ============ BIRTH CHART TAB ============ -->
+    <div class="tool-panel active" id="panel-birthchart">
+      <div class="tool-form-wrapper fade-in">
+        <div class="tool-form-header">
+          <h2>Generate Your Kundali</h2>
+          <p>Enter your birth details to generate a complete Vedic birth chart with planetary positions, Nakshatras, house placements, and Vimshottari Dasha timeline.</p>
+        </div>
+
+        <form id="birthchart-form" onsubmit="generateBirthChart(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bc-name">Full Name</label>
+              <input type="text" id="bc-name" placeholder="Enter your name" required>
+            </div>
+          </div>
+
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label for="bc-date">Date of Birth</label>
+              <input type="date" id="bc-date" required>
+            </div>
+            <div class="form-group">
+              <label for="bc-time">Time of Birth</label>
+              <input type="time" id="bc-time" required>
+            </div>
+            <div class="form-group">
+              <label for="bc-timezone">Timezone (UTC offset)</label>
+              <select id="bc-timezone" required>
+                <option value="+05:30" selected>IST (+05:30)</option>
+                <option value="+00:00">UTC (+00:00)</option>
+                <option value="+01:00">CET (+01:00)</option>
+                <option value="+02:00">EET (+02:00)</option>
+                <option value="+03:00">MSK (+03:00)</option>
+                <option value="+03:30">IRST (+03:30)</option>
+                <option value="+04:00">GST (+04:00)</option>
+                <option value="+04:30">AFT (+04:30)</option>
+                <option value="+05:00">PKT (+05:00)</option>
+                <option value="+05:30">IST (+05:30)</option>
+                <option value="+05:45">NPT (+05:45)</option>
+                <option value="+06:00">BST (+06:00)</option>
+                <option value="+06:30">MMT (+06:30)</option>
+                <option value="+07:00">ICT (+07:00)</option>
+                <option value="+08:00">CST (+08:00)</option>
+                <option value="+09:00">JST (+09:00)</option>
+                <option value="+09:30">ACST (+09:30)</option>
+                <option value="+10:00">AEST (+10:00)</option>
+                <option value="+11:00">SBT (+11:00)</option>
+                <option value="+12:00">NZST (+12:00)</option>
+                <option value="-05:00">EST (-05:00)</option>
+                <option value="-06:00">CST (-06:00)</option>
+                <option value="-07:00">MST (-07:00)</option>
+                <option value="-08:00">PST (-08:00)</option>
+                <option value="-09:00">AKST (-09:00)</option>
+                <option value="-10:00">HST (-10:00)</option>
+                <option value="-03:00">BRT (-03:00)</option>
+                <option value="-04:00">AST (-04:00)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bc-place">Place of Birth</label>
+              <input type="text" id="bc-place" placeholder="e.g. Chennai, Tamil Nadu, India" required>
+              <span class="form-hint">Be specific: City, State, Country</span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="bc-submit">
+              <span class="btn-text">Generate Kundali</span>
+              <span class="btn-loader" style="display:none;">Calculating...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Birth Chart Results -->
+      <div id="bc-results" class="tool-results" style="display: none;">
+        <div class="results-header fade-in">
+          <h2 id="bc-results-name">Birth Chart Results</h2>
+          <p id="bc-results-meta"></p>
+          <div class="section-line"></div>
+        </div>
+
+        <!-- Basic Info -->
+        <div class="result-card fade-in" id="bc-basic-info">
+          <h3>Basic Chart Information</h3>
+          <div class="result-grid" id="bc-basic-grid"></div>
+        </div>
+
+        <!-- Planet Positions -->
+        <div class="result-card fade-in" id="bc-planets-section">
+          <h3>Planetary Positions (Graha Sthiti)</h3>
+          <div class="result-table-wrap">
+            <table class="result-table" id="bc-planets-table">
+              <thead>
+                <tr>
+                  <th>Planet (Graha)</th>
+                  <th>Sign (Rashi)</th>
+                  <th>Degree</th>
+                  <th>Nakshatra</th>
+                  <th>House</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- House Positions -->
+        <div class="result-card fade-in" id="bc-houses-section">
+          <h3>House Cusps (Bhava)</h3>
+          <div class="result-table-wrap">
+            <table class="result-table" id="bc-houses-table">
+              <thead>
+                <tr>
+                  <th>House</th>
+                  <th>Sign</th>
+                  <th>Lord</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Dasha -->
+        <div class="result-card fade-in" id="bc-dasha-section">
+          <h3>Vimshottari Dasha (Planetary Periods)</h3>
+          <div id="bc-dasha-content"></div>
+        </div>
+
+        <!-- Predictions -->
+        <div class="result-card fade-in" id="bc-predictions-section">
+          <h3>Yoga & Chart Predictions</h3>
+          <div id="bc-predictions-content"></div>
+        </div>
+
+        <!-- CTA -->
+        <div class="result-cta fade-in">
+          <p>Want a deeper, personalized reading of your chart by an experienced Vedic astrologer?</p>
+          <a href="/consultation/" class="btn btn-primary">Book a Consultation</a>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="bc-error" class="tool-error" style="display: none;"></div>
+    </div>
+
+    <!-- ============ COMPATIBILITY TAB ============ -->
+    <div class="tool-panel" id="panel-compatibility">
+      <div class="tool-form-wrapper fade-in">
+        <div class="tool-form-header">
+          <h2>Ashtakoota Marriage Compatibility</h2>
+          <p>Enter the birth details of both partners to calculate Guna Milan score with detailed Kuta breakdown, Mangal Dosha assessment, and compatibility analysis.</p>
+        </div>
+
+        <form id="compatibility-form" onsubmit="generateCompatibility(event)">
+          <!-- Male Details -->
+          <div class="partner-section">
+            <h3 class="partner-label">
+              <span class="partner-icon">♂</span> Male Partner
+            </h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="male-name">Full Name</label>
+                <input type="text" id="male-name" placeholder="Enter name" required>
+              </div>
+            </div>
+
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label for="male-date">Date of Birth</label>
+                <input type="date" id="male-date" required>
+              </div>
+              <div class="form-group">
+                <label for="male-time">Time of Birth</label>
+                <input type="time" id="male-time" required>
+              </div>
+              <div class="form-group">
+                <label for="male-timezone">Timezone</label>
+                <select id="male-timezone" required>
+                  <option value="+05:30" selected>IST (+05:30)</option>
+                  <option value="+00:00">UTC (+00:00)</option>
+                  <option value="+01:00">CET (+01:00)</option>
+                  <option value="+02:00">EET (+02:00)</option>
+                  <option value="+03:00">MSK (+03:00)</option>
+                  <option value="+03:30">IRST (+03:30)</option>
+                  <option value="+04:00">GST (+04:00)</option>
+                  <option value="+05:00">PKT (+05:00)</option>
+                  <option value="+05:30">IST (+05:30)</option>
+                  <option value="+05:45">NPT (+05:45)</option>
+                  <option value="+06:00">BST (+06:00)</option>
+                  <option value="+07:00">ICT (+07:00)</option>
+                  <option value="+08:00">CST (+08:00)</option>
+                  <option value="+09:00">JST (+09:00)</option>
+                  <option value="+10:00">AEST (+10:00)</option>
+                  <option value="+12:00">NZST (+12:00)</option>
+                  <option value="-05:00">EST (-05:00)</option>
+                  <option value="-06:00">CST (-06:00)</option>
+                  <option value="-07:00">MST (-07:00)</option>
+                  <option value="-08:00">PST (-08:00)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="male-place">Place of Birth</label>
+                <input type="text" id="male-place" placeholder="e.g. Mumbai, Maharashtra, India" required>
+                <span class="form-hint">Be specific: City, State, Country</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="partner-divider">
+            <span>✦</span>
+          </div>
+
+          <!-- Female Details -->
+          <div class="partner-section">
+            <h3 class="partner-label">
+              <span class="partner-icon" style="color: var(--gold-ink);">♀</span> Female Partner
+            </h3>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="female-name">Full Name</label>
+                <input type="text" id="female-name" placeholder="Enter name" required>
+              </div>
+            </div>
+
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label for="female-date">Date of Birth</label>
+                <input type="date" id="female-date" required>
+              </div>
+              <div class="form-group">
+                <label for="female-time">Time of Birth</label>
+                <input type="time" id="female-time" required>
+              </div>
+              <div class="form-group">
+                <label for="female-timezone">Timezone</label>
+                <select id="female-timezone" required>
+                  <option value="+05:30" selected>IST (+05:30)</option>
+                  <option value="+00:00">UTC (+00:00)</option>
+                  <option value="+01:00">CET (+01:00)</option>
+                  <option value="+02:00">EET (+02:00)</option>
+                  <option value="+03:00">MSK (+03:00)</option>
+                  <option value="+03:30">IRST (+03:30)</option>
+                  <option value="+04:00">GST (+04:00)</option>
+                  <option value="+05:00">PKT (+05:00)</option>
+                  <option value="+05:30">IST (+05:30)</option>
+                  <option value="+05:45">NPT (+05:45)</option>
+                  <option value="+06:00">BST (+06:00)</option>
+                  <option value="+07:00">ICT (+07:00)</option>
+                  <option value="+08:00">CST (+08:00)</option>
+                  <option value="+09:00">JST (+09:00)</option>
+                  <option value="+10:00">AEST (+10:00)</option>
+                  <option value="+12:00">NZST (+12:00)</option>
+                  <option value="-05:00">EST (-05:00)</option>
+                  <option value="-06:00">CST (-06:00)</option>
+                  <option value="-07:00">MST (-07:00)</option>
+                  <option value="-08:00">PST (-08:00)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="female-place">Place of Birth</label>
+                <input type="text" id="female-place" placeholder="e.g. Delhi, India" required>
+                <span class="form-hint">Be specific: City, State, Country</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="compat-submit">
+              <span class="btn-text">Check Compatibility</span>
+              <span class="btn-loader" style="display:none;">Calculating...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Compatibility Results -->
+      <div id="compat-results" class="tool-results" style="display: none;">
+        <div class="results-header fade-in">
+          <h2>Compatibility Report</h2>
+          <p id="compat-results-meta"></p>
+          <div class="section-line"></div>
+        </div>
+
+        <!-- Score -->
+        <div class="result-card compat-score-card fade-in" id="compat-score-section">
+          <div class="compat-score-display">
+            <div class="compat-score-circle" id="compat-score-circle">
+              <span class="compat-score-num" id="compat-score-num">--</span>
+              <span class="compat-score-label">out of 36</span>
+            </div>
+            <div class="compat-score-info">
+              <h3 id="compat-score-summary">Calculating...</h3>
+              <p id="compat-score-desc"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kuta Breakdown -->
+        <div class="result-card fade-in" id="compat-kuta-section">
+          <h3>Ashtakoota (8 Kuta) Breakdown</h3>
+          <div class="result-table-wrap">
+            <table class="result-table" id="compat-kuta-table">
+              <thead>
+                <tr>
+                  <th>Kuta</th>
+                  <th>Max Points</th>
+                  <th>Result</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Additional Factors -->
+        <div class="result-card fade-in" id="compat-extra-section">
+          <h3>Additional Compatibility Factors</h3>
+          <div id="compat-extra-content"></div>
+        </div>
+
+        <!-- CTA -->
+        <div class="result-cta fade-in">
+          <p>Numbers tell part of the story. For a complete matchmaking analysis with remedies and deeper insight, consult with us.</p>
+          <a href="/consultation/" class="btn btn-primary">Book a Matchmaking Consultation</a>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="compat-error" class="tool-error" style="display: none;"></div>
+    </div>
+
+  </div>
+</section>
+
+<script src="/js/vedastro-tools.js"></script>
+{{ end }}
