@@ -1247,13 +1247,17 @@ em { color: var(--gold-ink); }
 
 /* Form Layout */
 .form-row {
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.5rem;
 }
 
-.form-row-3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1rem;
+.form-row-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 0.5rem;
 }
 
 .form-hint {
@@ -1261,13 +1265,136 @@ em { color: var(--gold-ink); }
   font-family: var(--font-ui);
   font-size: 0.68rem;
   color: var(--ink-ghost);
-  margin-top: 0.3rem;
+  margin-top: 0.4rem;
   letter-spacing: 0.03em;
 }
 
 .form-actions {
   text-align: center;
   margin-top: 2rem;
+}
+
+/* Date & Time Dropdown Rows */
+.date-select-row,
+.time-select-row {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.date-select-row {
+  grid-template-columns: 1fr 2fr 1.2fr;
+}
+
+.time-select-row {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.date-select-row select,
+.time-select-row select {
+  width: 100%;
+  background: var(--parchment-mid);
+  border: 1px solid var(--ink-ghost);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 0.7rem 0.8rem;
+  transition: border-color 0.3s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='%238A7D6B'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  padding-right: 2rem;
+  cursor: pointer;
+}
+
+.date-select-row select:focus,
+.time-select-row select:focus {
+  outline: none;
+  border-color: var(--gold-ink);
+}
+
+/* Place Autocomplete */
+.place-group {
+  position: relative;
+}
+
+.place-suggestions {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--parchment-mid);
+  border: 1px solid rgba(196, 154, 44, 0.15);
+  border-top: none;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.place-suggestion-item {
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(196, 154, 44, 0.04);
+}
+
+.place-suggestion-item:last-child { border-bottom: none; }
+
+.place-suggestion-item:hover,
+.place-suggestion-item.active {
+  background: var(--parchment-warm);
+}
+
+.place-suggestion-name {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.place-suggestion-name strong {
+  color: var(--gold-ink);
+  font-weight: 500;
+}
+
+.place-suggestion-type {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  color: var(--ink-ghost);
+  text-transform: capitalize;
+  margin-top: 0.15rem;
+}
+
+.place-suggestion-empty {
+  padding: 0.8rem 1rem;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  text-align: center;
+}
+
+/* Loading Spinner */
+.btn-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loader-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink-ghost);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Partner Section (Compatibility) */
@@ -1424,20 +1551,9 @@ em { color: var(--gold-ink); }
 }
 
 /* Nature Labels */
-.nature-good {
-  color: var(--patina);
-  font-weight: 500;
-}
-
-.nature-bad {
-  color: var(--vermillion);
-  font-weight: 500;
-}
-
-.nature-neutral {
-  color: var(--ink-dim);
-  font-weight: 500;
-}
+.nature-good { color: var(--patina); font-weight: 500; }
+.nature-bad { color: var(--vermillion); font-weight: 500; }
+.nature-neutral { color: var(--ink-dim); font-weight: 500; }
 
 /* Dasha Display */
 .dasha-item {
@@ -1471,10 +1587,7 @@ em { color: var(--gold-ink); }
   min-width: 80px;
 }
 
-.dasha-period {
-  font-size: 0.82rem;
-  color: var(--ink-faded);
-}
+.dasha-period { font-size: 0.82rem; color: var(--ink-faded); }
 
 .dasha-nature {
   font-family: var(--font-ui);
@@ -1533,9 +1646,7 @@ em { color: var(--gold-ink); }
 }
 
 /* Compatibility Score */
-.compat-score-card {
-  text-align: center;
-}
+.compat-score-card { text-align: center; }
 
 .compat-score-display {
   display: flex;
@@ -1582,10 +1693,7 @@ em { color: var(--gold-ink); }
   margin-top: 0.2rem;
 }
 
-.compat-score-info {
-  text-align: left;
-  max-width: 360px;
-}
+.compat-score-info { text-align: left; max-width: 360px; }
 
 .compat-score-info h3 {
   font-size: 1.4rem;
@@ -1629,15 +1737,289 @@ em { color: var(--gold-ink); }
   border: 1px solid rgba(184, 58, 42, 0.15);
 }
 
-.error-content h3 {
-  color: var(--vermillion);
-  font-size: 1.1rem;
+.error-content h3 { color: var(--vermillion); font-size: 1.1rem; margin-bottom: 0.5rem; }
+.error-content p { font-size: 0.88rem; color: var(--ink-faded); }
+
+/* Kundali Chart */
+.kundali-svg {
+  width: 100%;
+  height: auto;
+}
+
+.kundali-svg text.chart-sign {
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  fill: #C49A2C;
+  letter-spacing: 0.05em;
+}
+
+.kundali-svg text.chart-planets {
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  fill: #E8DCC8;
+}
+
+.kundali-svg text.chart-house-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  fill: #5C5244;
+}
+
+/* Upagraha text in SVG chart */
+.kundali-svg text.chart-upa {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 300;
+  fill: #7A6F62;
+  font-style: italic;
+}
+/* Planet hover in chart */
+.kundali-svg .chart-planet-hover { pointer-events: all; transition: fill 0.1s; }
+.kundali-svg .chart-planet-hover:hover { fill: #D44A2E; }
+
+/* Compact Layout */
+.kundali-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.kundali-chart-block {
+  background: var(--parchment-dark);
+  border: 1px solid rgba(196, 154, 44, 0.08);
+  padding: 1rem;
+  text-align: center;
+}
+
+.kundali-chart-label {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-ink);
   margin-bottom: 0.5rem;
 }
 
-.error-content p {
-  font-size: 0.88rem;
+.kundali-chart-box {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Upagraha toggle icon */
+.upa-toggle-icon {
+  display: inline-block;
+  font-size: 0.5rem;
+  vertical-align: middle;
+  margin-right: 0.3rem;
+  transition: transform 0.2s;
+}
+
+/* Compact Table */
+.compact-table {
+  font-size: 0.82rem;
+}
+
+.compact-table th {
+  padding: 0.5rem 0.4rem;
+  font-size: 0.62rem;
+}
+
+.compact-table td {
+  padding: 0.45rem 0.4rem;
+  font-size: 0.82rem;
+}
+
+.table-note {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  color: var(--ink-ghost);
+  margin-top: 0.5rem;
+  letter-spacing: 0.03em;
+}
+
+/* Compact Card */
+.compact-card {
+  padding: 1.2rem;
+}
+
+.compact-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.4rem;
+}
+
+/* Dasha Tree */
+.dasha-tree {
+  font-size: 0.82rem;
+}
+
+.dasha-node {
+  border-bottom: 1px solid rgba(196, 154, 44, 0.04);
+}
+
+.dasha-node-current > .dasha-row {
+  background: rgba(184, 58, 42, 0.06);
+}
+
+.dasha-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.4rem;
+  transition: background 0.15s;
+  font-family: var(--font-ui);
+}
+
+.dasha-row:hover {
+  background: rgba(196, 154, 44, 0.06);
+}
+
+.dasha-arrow {
+  display: inline-block;
+  width: 0.7rem;
+  font-size: 0.55rem;
+  color: var(--gold-ink);
+  flex-shrink: 0;
+}
+
+.dasha-row strong {
+  min-width: 4.5rem;
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+
+.dasha-dates {
+  color: var(--ink-dim);
+  font-size: 0.72rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.dasha-now {
+  color: var(--vermillion);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-left: 0.4rem;
+}
+
+.dasha-children {
+  border-left: 1px solid rgba(196, 154, 44, 0.1);
+  margin-left: 0.6rem;
+}
+
+.dasha-level-1 { font-size: 0.78rem; }
+.dasha-level-1 strong { font-size: 0.78rem; font-weight: 500; }
+.dasha-level-2 { font-size: 0.74rem; }
+.dasha-level-2 strong { font-size: 0.74rem; font-weight: 400; }
+.dasha-level-3 { font-size: 0.7rem; }
+.dasha-level-3 strong { font-size: 0.7rem; font-weight: 400; color: var(--ink-faded); }
+
+.dasha-row-current {
+  background: rgba(184, 58, 42, 0.06);
+}
+
+.dasha-row-current strong {
+  color: var(--vermillion);
+}
+
+.dasha-level-tag {
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  min-width: 1.2rem;
+  flex-shrink: 0;
+}
+
+.loader-spinner-sm {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--gold-ink);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Combust / Retrograde markers */
+.marker-combust {
+  color: var(--vermillion);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.marker-retro {
+  color: #E0C564;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.marker-direct {
+  color: var(--ink-ghost);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+}
+
+/* Karaka & Avastha columns */
+.compact-table td:nth-child(8),
+.compact-table td:nth-child(9) {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.compact-table td:nth-child(8) {
+  color: var(--gold-ink);
+  font-weight: 500;
+}
+
+/* Planet row hover for aspects */
+.compact-table tbody tr[data-planet] {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.compact-table tbody tr[data-planet]:hover {
+  background: rgba(196, 154, 44, 0.06);
+}
+
+.compact-table tbody tr[data-planet]:hover td:first-child strong {
+  color: var(--gold-ink);
+}
+
+/* Upagraha separator row */
+.upa-separator td {
+  padding: 0.6rem 0.4rem 0.3rem !important;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border-bottom: 1px solid rgba(196, 154, 44, 0.1);
+}
+
+/* Upagraha data rows */
+.upa-row td {
+  font-size: 0.78rem;
   color: var(--ink-faded);
+  font-style: italic;
+}
+
+.upa-row td:first-child strong {
+  font-weight: 400;
+  font-style: italic;
 }
 
 /* Responsive - Tools */
@@ -1645,7 +2027,7 @@ em { color: var(--gold-ink); }
   .tool-tabs { flex-direction: column; align-items: stretch; }
   .tool-tab { justify-content: center; }
   .tool-form-wrapper { padding: 1.5rem; }
-  .form-row-3 { grid-template-columns: 1fr; }
+  .kundali-charts-row { grid-template-columns: 1fr; }
   .result-grid { grid-template-columns: 1fr; }
   .compat-score-display { flex-direction: column; text-align: center; }
   .compat-score-info { text-align: center; }
