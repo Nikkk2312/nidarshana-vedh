@@ -2035,3 +2035,290 @@ em { color: var(--gold-ink); }
   .dasha-bhukti { margin-left: 0.5rem; }
   .dasha-pratyantar { margin-left: 1rem; }
 }
+
+/* ============================================
+   ARTICLE CONTENT STYLES
+   ============================================ */
+
+/* Article meta bar */
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+.article-meta time {
+  color: var(--gold-ink);
+}
+.article-category {
+  background: var(--parchment-warm);
+  color: var(--gold-pale);
+  padding: 0.15rem 0.65rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.article-reading-time {
+  color: var(--ink-dim);
+}
+
+/* Article body */
+.article-content {
+  font-size: 1.08rem;
+  line-height: 1.9;
+  color: var(--ink);
+}
+
+.article-content > * + * {
+  margin-top: 1.4rem;
+}
+
+/* Headings inside article */
+.article-content h2 {
+  margin-top: 3rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--parchment-edge);
+  color: var(--gold-bright);
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+}
+
+.article-content h3 {
+  margin-top: 2.2rem;
+  margin-bottom: 0.3rem;
+  color: var(--ink);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-weight: 500;
+}
+
+.article-content h4 {
+  margin-top: 1.8rem;
+  margin-bottom: 0.2rem;
+  color: var(--ink-faded);
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Paragraphs */
+.article-content p {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+/* Bold & italic */
+.article-content strong {
+  color: var(--gold-pale);
+  font-weight: 600;
+}
+
+.article-content em {
+  color: var(--ink);
+  font-style: italic;
+}
+
+/* Links */
+.article-content a {
+  color: var(--gold-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--gold-shadow);
+  text-underline-offset: 3px;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+.article-content a:hover {
+  color: var(--gold-bright);
+  text-decoration-color: var(--gold-bright);
+}
+
+/* Horizontal rules */
+.article-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-shadow), var(--gold-ink), var(--gold-shadow), transparent);
+  margin: 2.5rem 0;
+  opacity: 0.6;
+}
+
+/* Blockquotes */
+.article-content blockquote {
+  border-left: 3px solid var(--gold-ink);
+  background: var(--parchment-dark);
+  margin: 2rem 0;
+  padding: 1.2rem 1.5rem;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  color: var(--ink-faded);
+  position: relative;
+}
+.article-content blockquote::before {
+  content: '\201C';
+  position: absolute;
+  top: -0.2rem;
+  left: 0.6rem;
+  font-size: 3rem;
+  color: var(--gold-shadow);
+  opacity: 0.4;
+  font-family: var(--font-display);
+  line-height: 1;
+}
+.article-content blockquote p {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+.article-content blockquote p + p {
+  margin-top: 0.5rem;
+}
+
+/* Unordered lists */
+.article-content ul {
+  margin: 1rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+.article-content ul li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.article-content ul li::before {
+  content: '✦';
+  position: absolute;
+  left: 0;
+  color: var(--gold-ink);
+  font-size: 0.7rem;
+  top: 0.45rem;
+}
+
+/* Ordered lists */
+.article-content ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  list-style: none;
+  counter-reset: article-counter;
+}
+.article-content ol li {
+  position: relative;
+  padding-left: 1rem;
+  margin-bottom: 0.5rem;
+  counter-increment: article-counter;
+}
+.article-content ol li::before {
+  content: counter(article-counter) '.';
+  position: absolute;
+  left: -1.2rem;
+  color: var(--gold-ink);
+  font-weight: 600;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+
+/* Nested lists */
+.article-content li > ul,
+.article-content li > ol {
+  margin-top: 0.4rem;
+  margin-bottom: 0;
+}
+
+/* Tables */
+.article-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  border: 1px solid var(--parchment-edge);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.article-content thead {
+  background: var(--parchment-warm);
+}
+.article-content thead th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: var(--gold-bright);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--gold-shadow);
+}
+.article-content tbody td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--parchment-edge);
+  color: var(--ink);
+  vertical-align: top;
+}
+.article-content tbody tr:nth-child(even) {
+  background: rgba(45, 38, 25, 0.5);
+}
+.article-content tbody tr:hover {
+  background: var(--parchment-warm);
+}
+.article-content tbody td strong {
+  color: var(--gold-pale);
+}
+
+/* Code / inline code */
+.article-content code {
+  background: var(--parchment-warm);
+  color: var(--sindoor);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: 'Courier New', monospace;
+}
+.article-content pre {
+  background: var(--parchment-dark);
+  border: 1px solid var(--parchment-edge);
+  border-radius: 6px;
+  padding: 1.2rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+.article-content pre code {
+  background: none;
+  color: var(--ink-faded);
+  padding: 0;
+}
+
+/* Article tags at bottom */
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--parchment-edge);
+}
+.article-tag {
+  background: var(--parchment-warm);
+  color: var(--ink-dim);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-family: var(--font-ui);
+  border: 1px solid var(--parchment-edge);
+  transition: border-color 0.2s, color 0.2s;
+}
+.article-tag:hover {
+  border-color: var(--gold-shadow);
+  color: var(--gold-ink);
+}
+
+/* Responsive article */
+@media (max-width: 768px) {
+  .article-content { font-size: 1rem; }
+  .article-content table { font-size: 0.85rem; display: block; overflow-x: auto; }
+  .article-content thead th { padding: 0.6rem 0.7rem; }
+  .article-content tbody td { padding: 0.5rem 0.7rem; }
+  .article-content blockquote { padding: 0.8rem 1rem; }
+  .article-meta { font-size: 0.8rem; }
+}

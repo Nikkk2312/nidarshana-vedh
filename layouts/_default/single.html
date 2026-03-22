@@ -4,12 +4,24 @@
     <p class="page-mantras">ॐ काल भैरवाय नमः &nbsp;·&nbsp; ॐ नमो भगवते वासुदेवाय नमः</p>
     <h1>{{ .Title }}</h1>
     {{ with .Params.subtitle }}<p>{{ . }}</p>{{ end }}
+    <div class="article-meta">
+      {{ with .Date }}<time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 January 2006" }}</time>{{ end }}
+      {{ with .Params.categories }}{{ range . }}<span class="article-category">{{ . }}</span>{{ end }}{{ end }}
+      <span class="article-reading-time">{{ math.Round (div (countwords .Content) 200.0) }} min read</span>
+    </div>
     <div class="section-line" style="margin-top: 1.5rem;"></div>
   </div>
 </div>
 <section class="section" style="padding-top: 0;">
   <div class="container-narrow">
-    {{ .Content }}
+    <article class="article-content">
+      {{ .Content }}
+    </article>
+    {{ with .Params.tags }}
+    <div class="article-tags">
+      {{ range . }}<span class="article-tag">{{ . }}</span>{{ end }}
+    </div>
+    {{ end }}
   </div>
 </section>
 {{ end }}
