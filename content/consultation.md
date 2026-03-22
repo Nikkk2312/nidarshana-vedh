@@ -17,7 +17,8 @@ A session with Nidarshana Vedh is not a list of doom predictions followed by exp
 <div class="service-card featured fade-in">
   <p class="service-label">Most Popular</p>
   <h3>Life Reading</h3>
-  <p class="service-price">₹3,000</p>
+  <p class="service-price">₹12,000</p>
+  <p class="service-price-note">~$140 USD · ~€130 EUR</p>
   <p class="service-price-note">55-minute session · Online</p>
   <ul class="service-features">
     <li>Complete birth chart analysis (Rashi, Navamsha, key divisional charts)</li>
@@ -35,7 +36,8 @@ A session with Nidarshana Vedh is not a list of doom predictions followed by exp
 <div class="service-card fade-in">
   <p class="service-label">For Couples & Families</p>
   <h3>Matchmaking / Kundli Milan</h3>
-  <p class="service-price">₹5,000</p>
+  <p class="service-price">₹21,000</p>
+  <p class="service-price-note">~$250 USD · ~€230 EUR</p>
   <p class="service-price-note">Two charts analyzed · Online</p>
   <ul class="service-features">
     <li>Complete Guna Milan (Ashtakoota) score analysis</li>
@@ -85,8 +87,8 @@ A session with Nidarshana Vedh is not a list of doom predictions followed by exp
 
 ### Select a Date & Time
 
-<div style="background: var(--parchment-dark); border: 1px solid rgba(196, 154, 44, 0.08); padding: 3rem; margin: 1.5rem 0;">
-  <p style="color: var(--ink-dim);">Booking calendar will be embedded here<br>(Cal.com or Calendly integration)</p>
+<div style="margin: 1.5rem 0; min-height: 500px;">
+  <iframe src="https://cal.com/nidarshanavedh" frameborder="0" style="width: 100%; height: 700px; border: 1px solid rgba(196, 154, 44, 0.08); border-radius: 8px;"></iframe>
 </div>
 
 </div>
