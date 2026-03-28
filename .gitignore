@@ -8,3 +8,5 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+.wrangler/
+screenshots/
