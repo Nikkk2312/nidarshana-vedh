@@ -2,12 +2,37 @@
 <div class="page-header">
   <div class="container">
     <p class="page-mantras">ॐ काल भैरवाय नमः &nbsp;·&nbsp; ॐ नमो भगवते वासुदेवाय नमः</p>
-    <p class="section-label">Insights & Analysis</p>
-    <h1>The Blog</h1>
-    <p>Deep dives into Vedic astrology: self-improvement, karmic patterns, relationships, wealth, health, and more.</p>
+    {{ if .Content }}
+      {{ with .Params.categories }}{{ range . }}<span class="article-category" style="display:inline-block;margin-bottom:0.5rem;">{{ . }}</span>{{ end }}{{ end }}
+      <h1>{{ .Title }}</h1>
+      {{ with .Params.description }}<p>{{ . }}</p>{{ end }}
+      <div class="article-meta">
+        {{ with .Date }}<time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 January 2006" }}</time>{{ end }}
+        <span class="article-reading-time">{{ math.Round (div (countwords .Content) 200.0) }} min read</span>
+      </div>
+    {{ else }}
+      <p class="section-label">Insights & Analysis</p>
+      <h1>The Blog</h1>
+      <p>Deep dives into Vedic astrology: self-improvement, karmic patterns, relationships, wealth, health, and more.</p>
+    {{ end }}
     <div class="section-line" style="margin-top: 1.5rem;"></div>
   </div>
 </div>
+{{ if .Content }}
+<section class="section" style="padding-top: 0;">
+  <div class="container-narrow">
+    <article class="article-content">
+      {{ .Content }}
+    </article>
+    {{ with .Params.tags }}
+    <div class="article-tags">
+      {{ range . }}<span class="article-tag">{{ . }}</span>{{ end }}
+    </div>
+    {{ end }}
+  </div>
+</section>
+{{ end }}
+{{ if .Pages }}
 <section class="section" style="padding-top: 0;">
   <div class="container">
     <div class="blog-grid">
@@ -26,4 +51,5 @@
     {{ template "_internal/pagination.html" . }}
   </div>
 </section>
+{{ end }}
 {{ end }}
