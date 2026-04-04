@@ -103,8 +103,8 @@
                 <span class="btn-text">Generate Kundali</span>
                 <span class="btn-loader" style="display:none;"><span class="loader-spinner"></span> Calculating...</span>
               </button>
-              <button type="button" class="btn btn-outline" onclick="quickFillTest()" style="font-size:0.75rem;padding:0.4rem 1rem;opacity:0.6;">Quick Fill (Dev)</button>
             </div>
+            <p id="bc-progress" style="display:none;text-align:center;color:var(--gold-ink);font-size:0.85rem;margin-top:1rem;"></p>
           </form>
         </div>
         <div id="bc-error" class="tool-error" style="display: none;"></div>
@@ -150,6 +150,14 @@
   <section class="section" style="padding-top: 0;">
     <div class="container-narrow">
       <p style="color: var(--ink-dim); font-size: 0.85rem; text-align: center;">If you need your chart read personally, <a href="/consultation/">book a consultation</a> and we will do it for you.</p>
+      <details style="margin-top:1.5rem;text-align:center;">
+        <summary style="color:var(--ink-dim);font-size:0.8rem;cursor:pointer;">Have a VedAstro API key? Enter it for instant results</summary>
+        <div style="margin-top:0.8rem;display:flex;gap:0.5rem;justify-content:center;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="api-key-input" placeholder="sk_live_..." style="font-size:0.8rem;padding:0.4rem 0.8rem;max-width:280px;background:var(--parchment-dark);border:1px solid var(--gold-ink);color:var(--ink);border-radius:4px;">
+          <button type="button" class="btn btn-outline" style="font-size:0.75rem;padding:0.35rem 0.8rem;" onclick="var k=document.getElementById('api-key-input').value.trim();if(k){localStorage.setItem('vedastro_api_key',k);alert('API key saved! Charts will now load instantly.');}else{localStorage.removeItem('vedastro_api_key');alert('API key removed.');}">Save Key</button>
+        </div>
+        <p style="color:var(--ink-faded);font-size:0.72rem;margin-top:0.5rem;">Get a key at <a href="https://vedastro.org/Account.html" target="_blank" style="color:var(--gold-ink);">vedastro.org</a> ($1/month for 200 calls/min). Your key is stored locally in your browser only.</p>
+      </details>
     </div>
   </section>
 

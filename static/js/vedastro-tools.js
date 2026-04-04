@@ -8,6 +8,7 @@ var PLANETS = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','
 var HOUSE_NAMES = ['1st (Lagna)','2nd (Dhana)','3rd (Sahaja)','4th (Sukha)','5th (Putra)','6th (Shatru)','7th (Kalatra)','8th (Ayu)','9th (Dharma)','10th (Karma)','11th (Labha)','12th (Vyaya)'];
 var KARAKA_NAMES = ['AK','AmK','BK','MK','PuK','GK','DK','PiK'];
 var KARAKA_FULL = {AK:'Atmakaraka (Soul)',AmK:'Amatyakaraka (Career)',BK:'Bhratrukaraka (Siblings)',MK:'Matrukaraka (Mother)',PuK:'Putrakaraka (Children)',GK:'Gnatikaraka (Obstacles)',DK:'Darakaraka (Spouse)',PiK:'Pitrukaraka (Father)'};
+var SIGN_RULER = {Aries:'Mars',Taurus:'Venus',Gemini:'Mercury',Cancer:'Moon',Leo:'Sun',Virgo:'Mercury',Libra:'Venus',Scorpio:'Mars',Sagittarius:'Jupiter',Capricorn:'Saturn',Aquarius:'Saturn',Pisces:'Jupiter'};
 
 // Planet info: abbreviation, English name, Hindi name
 var PLANET_INFO = {
@@ -153,7 +154,33 @@ function locTimeStrYear(lt,yr){return 'Location/'+encodeURIComponent(lt.place)+'
 function setLoading(id,on){var b=document.getElementById(id);b.disabled=on;b.querySelector('.btn-text').style.display=on?'none':'inline';b.querySelector('.btn-loader').style.display=on?'inline-flex':'none';}
 function showError(id,msg){var e=document.getElementById(id);e.style.display='block';e.innerHTML='<div class="error-content"><h3>Something went wrong</h3><p>'+msg+'</p><p style="font-size:0.82rem;color:var(--ink-dim);margin-top:1rem;">The API may be temporarily unavailable. Try again or <a href="/consultation/">book a consultation</a>.</p></div>';}
 function hideError(id){document.getElementById(id).style.display='none';}
-async function callAPI(ep){var r=await fetch(API+'/'+ep);if(!r.ok)throw new Error('API error '+r.status);var d=await r.json();if(d.Status!=='Pass')throw new Error(d.Payload||'Calculation failed');return d.Payload;}
+async function callAPI(ep){
+  var opts={};var apiKey=localStorage.getItem('vedastro_api_key');
+  if(apiKey)opts.headers={'x-api-key':apiKey};
+  var r=await fetch(API+'/'+ep,opts);if(!r.ok)throw new Error('API error '+r.status);
+  var d=await r.json();
+  if(d.Status!=='Pass'){var msg=(typeof d.Payload==='string')?d.Payload:'Calculation failed';var err=new Error(msg);err.isRateLimit=(msg.indexOf('rate limit')!==-1||msg.indexOf('Rate limit')!==-1);throw err;}
+  return d.Payload;
+}
+function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function showProgress(msg){var el=document.getElementById('bc-progress');if(el){el.style.display='block';el.textContent=msg;}}
+function hideProgress(){var el=document.getElementById('bc-progress');if(el)el.style.display='none';}
+async function batchedCalls(endpoints){
+  var apiKey=localStorage.getItem('vedastro_api_key');
+  var batchSize=apiKey?endpoints.length:5;
+  var data={};
+  for(var b=0;b<Math.ceil(endpoints.length/batchSize);b++){
+    var start=b*batchSize;
+    var batch=endpoints.slice(start,start+batchSize);
+    if(b>0&&!apiKey){
+      for(var sec=62;sec>0;sec--){showProgress('API cooldown — resuming in '+sec+'s (batch '+(b+1)+'/'+Math.ceil(endpoints.length/batchSize)+')');await delay(1000);}
+    }
+    showProgress('Loading chart data... ('+Math.min(start+batchSize,endpoints.length)+'/'+endpoints.length+')');
+    var results=await Promise.all(batch.map(function(e){return callAPI(e.ep);}));
+    batch.forEach(function(e,i){data[e.key]=results[i];});
+  }
+  return data;
+}
 function pick(arr,key){if(!Array.isArray(arr))return null;for(var i=0;i<arr.length;i++){if(arr[i][key]!==undefined)return arr[i][key];}return null;}
 function showResults(title,sub){document.getElementById('tools-form-view').style.display='none';document.getElementById('tools-results-view').style.display='block';document.getElementById('results-title').textContent=title;document.getElementById('results-subtitle').textContent=sub;window.scrollTo({top:0,behavior:'smooth'});}
 function backToForm(){document.getElementById('tools-results-view').style.display='none';document.getElementById('tools-form-view').style.display='block';document.getElementById('kundali-results').style.display='none';document.getElementById('compat-results').style.display='none';window.scrollTo({top:0,behavior:'smooth'});}
@@ -298,42 +325,31 @@ function setupChartHover(chartId){
 
 // ===== BIRTH CHART =====
 async function generateBirthChart(e){
-  e.preventDefault();hideError('bc-error');setLoading('bc-submit',true);
+  e.preventDefault();hideError('bc-error');setLoading('bc-submit',true);showProgress('Preparing...');
   var name=document.getElementById('bc-name').value.trim();
   var lt=getLocTime('bc');
   var ep=locTimeStr(lt);
 
   try{
-    var calls={};
-    // Main planet data
-    calls.d1=callAPI('PlanetRasiD1Sign/PlanetName/All/'+ep);
-    calls.nak=callAPI('PlanetConstellation/PlanetName/All/'+ep);
-    calls.house=callAPI('HousePlanetOccupiesBasedOnSign/PlanetName/All/'+ep);
-    calls.d9=callAPI('PlanetNavamshaD9Sign/PlanetName/All/'+ep);
-    calls.retro=callAPI('IsPlanetRetrograde/PlanetName/All/'+ep);
-    calls.combust=callAPI('IsPlanetCombust/PlanetName/All/'+ep);
-    calls.avasta=callAPI('PlanetAvasta/PlanetName/All/'+ep);
-    // House data
-    calls.hSign=callAPI('HouseSignName/HouseName/All/'+ep);
-    calls.hLord=callAPI('LordOfHouse/HouseName/All/'+ep);
-    calls.hNak=callAPI('HouseConstellation/HouseName/All/'+ep);
-    calls.hPlanets=callAPI('PlanetsInHouseBasedOnSign/HouseName/All/'+ep);
-    calls.ascDeg=callAPI('HouseRasiSign/HouseName/House1/'+ep);
-    // Upagraha data (individual calls)
-    UPAGRAHAS.forEach(function(u){
-      calls['u_d1_'+u]=callAPI('PlanetRasiD1Sign/PlanetName/'+u+'/'+ep).catch(function(){return null;});
-      calls['u_nak_'+u]=callAPI('PlanetConstellation/PlanetName/'+u+'/'+ep).catch(function(){return null;});
-      calls['u_house_'+u]=callAPI('HousePlanetOccupiesBasedOnSign/PlanetName/'+u+'/'+ep).catch(function(){return null;});
-      calls['u_d9_'+u]=callAPI('PlanetNavamshaD9Sign/PlanetName/'+u+'/'+ep).catch(function(){return null;});
-    });
+    // 10 core API calls (no upagrahas — saves 44 calls, avoids rate limits)
+    var endpoints=[
+      {key:'d1',ep:'PlanetRasiD1Sign/PlanetName/All/'+ep},
+      {key:'nak',ep:'PlanetConstellation/PlanetName/All/'+ep},
+      {key:'house',ep:'HousePlanetOccupiesBasedOnSign/PlanetName/All/'+ep},
+      {key:'d9',ep:'PlanetNavamshaD9Sign/PlanetName/All/'+ep},
+      {key:'retro',ep:'IsPlanetRetrograde/PlanetName/All/'+ep},
+      {key:'combust',ep:'IsPlanetCombust/PlanetName/All/'+ep},
+      {key:'avasta',ep:'PlanetAvasta/PlanetName/All/'+ep},
+      {key:'hSign',ep:'HouseSignName/HouseName/All/'+ep},
+      {key:'hNak',ep:'HouseConstellation/HouseName/All/'+ep},
+      {key:'ascDeg',ep:'HouseRasiSign/HouseName/House1/'+ep}
+    ];
 
-    var keys=Object.keys(calls);
-    var results=await Promise.all(keys.map(function(k){return calls[k];}));
-    var data={};
-    keys.forEach(function(k,i){data[k]=results[i];});
+    var data=await batchedCalls(endpoints);
 
-    birthEp=ep; // store for dasha drill-down
+    birthEp=ep;
     var h=document.getElementById('bc-hour').value,m=document.getElementById('bc-minute').value,ap=document.getElementById('bc-ampm').value;
+    hideProgress();
     showResults('Kundali of '+name, lt.day+'/'+lt.month+'/'+lt.year+' at '+h+':'+m+' '+ap+' — '+lt.place);
     document.getElementById('kundali-results').style.display='block';
     renderKundali(data);
@@ -341,12 +357,20 @@ async function generateBirthChart(e){
     // Load dasha async (don't block chart rendering)
     var endYr=String(parseInt(lt.year)+100);
     document.getElementById('dasha-content').innerHTML='<p style="color:var(--ink-dim)">Loading Dasha data...</p>';
-    callAPI('DasaAtRange/'+ep+'/'+ep+'/'+locTimeStrYear(lt,endYr)+'/Levels/2/PrecisionHours/720')
-      .then(function(dashaData){renderDasha(dashaData);})
-      .catch(function(){document.getElementById('dasha-content').innerHTML='<p style="color:var(--ink-dim)">Dasha data unavailable. Try refreshing.</p>';});
+    var dashaWait=localStorage.getItem('vedastro_api_key')?0:62000;
+    setTimeout(function(){
+      callAPI('DasaAtRange/'+ep+'/'+ep+'/'+locTimeStrYear(lt,endYr)+'/Levels/2/PrecisionHours/720')
+        .then(function(dashaData){renderDasha(dashaData);})
+        .catch(function(){document.getElementById('dasha-content').innerHTML='<p style="color:var(--ink-dim)">Dasha data unavailable. Try refreshing.</p>';});
+    },dashaWait);
   }catch(err){
-    showError('bc-error',err.message||'Failed to generate. Check birth details and try again.');
-  }finally{setLoading('bc-submit',false);}
+    hideProgress();
+    if(err.isRateLimit){
+      showError('bc-error','VedAstro API rate limit reached (5 calls/min on free tier). Please wait 1 minute and try again.<br><br>For instant results, <a href="https://vedastro.org/Account.html" target="_blank">get a VedAstro API key</a> ($1/month) and enter it below the form.');
+    }else{
+      showError('bc-error',err.message||'Failed to generate. Check birth details and try again.');
+    }
+  }finally{setLoading('bc-submit',false);hideProgress();}
 }
 
 
@@ -374,41 +398,26 @@ function renderKundali(data){
     planetData.push({name:name,sign:sign,degree:deg,totalDeg:totalDeg,nakshatra:nak||'',house:house||'',navSign:navSign,navDeg:navDeg,retro:(retro==='True'),combust:(comb==='True'),avastha:cleanAvastha(avs||'')});
   });
 
-  // === UPAGRAHAS ===
-  var upaData=[];
-  UPAGRAHAS.forEach(function(u){
-    try{
-      var d1Raw=data['u_d1_'+u];var nakRaw=data['u_nak_'+u];var houseRaw=data['u_house_'+u];var d9Raw=data['u_d9_'+u];
-      if(!d1Raw)return;
-      var d1=d1Raw.PlanetRasiD1Sign;
-      var sign=(d1&&d1.Name)||'';
-      var deg='',totalDeg=0;
-      if(d1&&d1.DegreesIn){deg=d1.DegreesIn.DegreeMinuteSecond||'';totalDeg=parseFloat(d1.DegreesIn.TotalDegrees)||0;}
-      var nak=(nakRaw&&nakRaw.PlanetConstellation)||'';
-      var house=(houseRaw&&houseRaw.HousePlanetOccupiesBasedOnSign)||'';
-      var navSign='',navDeg=0;
-      if(d9Raw){var d9=d9Raw.PlanetNavamshaD9Sign;if(d9&&typeof d9==='object'){navSign=d9.Name||'';if(d9.DegreesIn)navDeg=parseFloat(d9.DegreesIn.TotalDegrees)||0;}}
-      upaData.push({name:u,sign:sign,degree:deg,totalDeg:totalDeg,nakshatra:nak,house:house,navSign:navSign,navDeg:navDeg});
-    }catch(e){}
-  });
-
   // === ASCENDANT ===
   var ascDeg='',ascTotalDeg=0;
   try{var ar=data.ascDeg.HouseRasiSign;if(ar&&ar.DegreesIn){ascDeg=ar.DegreesIn.DegreeMinuteSecond||'';ascTotalDeg=parseFloat(ar.DegreesIn.TotalDegrees)||0;}}catch(e){}
 
-  // === HOUSES ===
+  // === HOUSES (lords derived from sign rulers — no extra API call needed) ===
   var hSignArr=data.hSign.HouseSignName||[];
-  var hLordArr=data.hLord.LordOfHouse||[];
-  var hNakArr=data.hNak.HouseConstellation||[];
-  var hPlanetArr=data.hPlanets.PlanetsInHouseBasedOnSign||[];
+  var hNakArr=(data.hNak&&data.hNak.HouseConstellation)||[];
 
   var houses=[];
   for(var i=1;i<=12;i++){
     var hk='House'+i;
     var sign=pick(hSignArr,hk)||'';
-    var lord=pick(hLordArr,hk);lord=(lord&&typeof lord==='object')?lord.Name:(lord||'');
-    houses.push({sign:sign,lord:lord,nakshatra:pick(hNakArr,hk)||'',planets:pick(hPlanetArr,hk)||[]});
+    var lord=SIGN_RULER[sign]||'';
+    houses.push({sign:sign,lord:lord,nakshatra:pick(hNakArr,hk)||'',planets:[]});
   }
+  // Derive planets in each house from planet→house data
+  planetData.forEach(function(p){
+    var hIdx=parseInt(p.house.replace('House',''),10)-1;
+    if(hIdx>=0&&hIdx<12)houses[hIdx].planets.push(p.name);
+  });
 
   // D9 Lagna: derive mathematically from ascendant sign + degree (most reliable)
   var ascSign=houses[0].sign;
@@ -424,33 +433,24 @@ function renderKundali(data){
   var karakaMap=computeKaraka(planetData);
 
   // === RASHI CHART ===
-  var rSigns=[],rPlanets=[],rDegs={},rUpa={};
-  for(var i=0;i<12;i++){rSigns.push(houses[i].sign);rPlanets.push([]);rUpa[i]=[];}
+  var rSigns=[],rPlanets=[],rDegs={};
+  for(var i=0;i<12;i++){rSigns.push(houses[i].sign);rPlanets.push([]);}
   planetData.forEach(function(p){
     var hIdx=parseInt(p.house.replace('House',''),10)-1;
     if(hIdx>=0&&hIdx<12){rPlanets[hIdx].push(p.name);rDegs[p.name]=p.totalDeg;}
   });
-  upaData.forEach(function(u){
-    var hIdx=parseInt(u.house.replace('House',''),10)-1;
-    if(hIdx>=0&&hIdx<12)rUpa[hIdx].push({name:u.name,deg:u.totalDeg});
-  });
-  drawChart('rashi-chart',rSigns,rPlanets,rDegs,rUpa);
+  drawChart('rashi-chart',rSigns,rPlanets,rDegs);
 
   // === NAVAMSA CHART ===
   var d9Idx=SIGNS_ORDER.indexOf(d9LagnaSign);if(d9Idx===-1)d9Idx=0;
-  var nSigns=[],nPlanets=[],nDegs={},nUpa={};
-  for(var i=0;i<12;i++){nSigns.push(SIGNS_ORDER[(d9Idx+i)%12]);nPlanets.push([]);nUpa[i]=[];}
+  var nSigns=[],nPlanets=[],nDegs={};
+  for(var i=0;i<12;i++){nSigns.push(SIGNS_ORDER[(d9Idx+i)%12]);nPlanets.push([]);}
   planetData.forEach(function(p){
     if(!p.navSign)return;
     var sIdx=SIGNS_ORDER.indexOf(p.navSign);if(sIdx===-1)return;
     nPlanets[(sIdx-d9Idx+12)%12].push(p.name);nDegs[p.name]=p.navDeg;
   });
-  upaData.forEach(function(u){
-    if(!u.navSign)return;
-    var sIdx=SIGNS_ORDER.indexOf(u.navSign);if(sIdx===-1)return;
-    nUpa[(sIdx-d9Idx+12)%12].push({name:u.name,deg:u.navDeg});
-  });
-  drawChart('navamsa-chart',nSigns,nPlanets,nDegs,nUpa);
+  drawChart('navamsa-chart',nSigns,nPlanets,nDegs);
 
   // === CHART HOVER ASPECTS ===
   setupChartHover('rashi-chart');
@@ -483,42 +483,11 @@ function renderKundali(data){
     tbody.appendChild(tr);
   });
 
-  // Upagraha section (collapsible)
-  if(upaData.length){
-    var upaToggle=document.createElement('tr');
-    upaToggle.className='upa-separator';
-    upaToggle.style.cursor='pointer';
-    upaToggle.innerHTML='<td colspan="9"><span class="upa-toggle-icon">&#9654;</span> Upagrahas (Sub-Planets) <span style="font-weight:400;font-size:0.55rem;letter-spacing:0;text-transform:none;opacity:0.6">— click to expand</span></td>';
-    tbody.appendChild(upaToggle);
-
-    var upaRows=[];
-    upaData.forEach(function(u){
-      var nakName=u.nakshatra,pada='';
-      if(u.nakshatra.indexOf(' - ')!==-1){var sp=u.nakshatra.split(' - ');nakName=sp[0].trim();pada=sp[1].trim();}
-      var tr=document.createElement('tr');
-      tr.className='upa-row';
-      tr.style.display='none';
-      tr.innerHTML='<td title="'+pTitle(u.name)+'">'+u.name+'</td><td></td><td></td><td>'+u.sign+'</td><td>'+fmtDeg(u.degree)+'</td><td>'+nakName+'</td><td>'+pada+'</td><td></td><td></td>';
-      tbody.appendChild(tr);
-      upaRows.push(tr);
-    });
-
-    var upaOpen=false;
-    upaToggle.addEventListener('click',function(){
-      upaOpen=!upaOpen;
-      upaToggle.querySelector('.upa-toggle-icon').innerHTML=upaOpen?'&#9660;':'&#9654;';
-      upaRows.forEach(function(r){r.style.display=upaOpen?'':'none';});
-    });
-  }
-
   // === HOUSE TABLE ===
   var htb=document.querySelector('#houses-table tbody');
   htb.innerHTML='';
   houses.forEach(function(h,i){
-    // Combine main planets + upagrahas for this house
-    var allPlanets=rPlanets[i].slice();
-    rUpa[i].forEach(function(u){allPlanets.push(u.name);});
-    var pls=allPlanets.length?allPlanets.join(', '):'—';
+    var pls=rPlanets[i].length?rPlanets[i].join(', '):'—';
     htb.innerHTML+='<tr><td><strong>'+HOUSE_NAMES[i]+'</strong></td><td>'+h.sign+'</td><td>'+h.lord+'</td><td>'+h.nakshatra+'</td><td>'+pls+'</td></tr>';
   });
 }
