@@ -168,6 +168,7 @@ function hideProgress(){var el=document.getElementById('bc-progress');if(el)el.s
 async function batchedCalls(endpoints){
   var apiKey=localStorage.getItem('vedastro_api_key');
   var batchSize=apiKey?endpoints.length:5;
+  var essential=['d1','house','hSign','ascDeg'];
   var data={};
   for(var b=0;b<Math.ceil(endpoints.length/batchSize);b++){
     var start=b*batchSize;
@@ -176,8 +177,23 @@ async function batchedCalls(endpoints){
       for(var sec=62;sec>0;sec--){showProgress('API cooldown — resuming in '+sec+'s (batch '+(b+1)+'/'+Math.ceil(endpoints.length/batchSize)+')');await delay(1000);}
     }
     showProgress('Loading chart data... ('+Math.min(start+batchSize,endpoints.length)+'/'+endpoints.length+')');
-    var results=await Promise.all(batch.map(function(e){return callAPI(e.ep);}));
+    var results=await Promise.all(batch.map(function(e){
+      return callAPI(e.ep).catch(function(err){
+        if(essential.indexOf(e.key)!==-1)throw err;
+        console.warn('Non-essential call failed ('+e.key+'):',err.message);
+        return null;
+      });
+    }));
     batch.forEach(function(e,i){data[e.key]=results[i];});
+  }
+  // Retry failed essential calls once
+  for(var i=0;i<endpoints.length;i++){
+    var e=endpoints[i];
+    if(data[e.key]===null&&essential.indexOf(e.key)!==-1){
+      showProgress('Retrying essential data ('+e.key+')...');
+      await delay(2000);
+      data[e.key]=await callAPI(e.ep);
+    }
   }
   return data;
 }
@@ -375,14 +391,14 @@ async function generateBirthChart(e){
 
 
 function renderKundali(data){
-  // === MAIN PLANETS ===
-  var d1Arr=data.d1.PlanetRasiD1Sign||[];
-  var nakArr=data.nak.PlanetConstellation||[];
-  var houseArr=data.house.HousePlanetOccupiesBasedOnSign||[];
-  var d9Arr=data.d9.PlanetNavamshaD9Sign||[];
-  var retroArr=data.retro.IsPlanetRetrograde||[];
-  var combustArr=data.combust.IsPlanetCombust||[];
-  var avastaArr=data.avasta.PlanetAvasta||[];
+  // === MAIN PLANETS (handle null from failed non-essential calls) ===
+  var d1Arr=(data.d1&&data.d1.PlanetRasiD1Sign)||[];
+  var nakArr=(data.nak&&data.nak.PlanetConstellation)||[];
+  var houseArr=(data.house&&data.house.HousePlanetOccupiesBasedOnSign)||[];
+  var d9Arr=(data.d9&&data.d9.PlanetNavamshaD9Sign)||[];
+  var retroArr=(data.retro&&data.retro.IsPlanetRetrograde)||[];
+  var combustArr=(data.combust&&data.combust.IsPlanetCombust)||[];
+  var avastaArr=(data.avasta&&data.avasta.PlanetAvasta)||[];
 
   var planetData=[];
   PLANETS.forEach(function(name){
@@ -400,10 +416,10 @@ function renderKundali(data){
 
   // === ASCENDANT ===
   var ascDeg='',ascTotalDeg=0;
-  try{var ar=data.ascDeg.HouseRasiSign;if(ar&&ar.DegreesIn){ascDeg=ar.DegreesIn.DegreeMinuteSecond||'';ascTotalDeg=parseFloat(ar.DegreesIn.TotalDegrees)||0;}}catch(e){}
+  try{var ar=data.ascDeg&&data.ascDeg.HouseRasiSign;if(ar&&ar.DegreesIn){ascDeg=ar.DegreesIn.DegreeMinuteSecond||'';ascTotalDeg=parseFloat(ar.DegreesIn.TotalDegrees)||0;}}catch(e){}
 
   // === HOUSES (lords derived from sign rulers — no extra API call needed) ===
-  var hSignArr=data.hSign.HouseSignName||[];
+  var hSignArr=(data.hSign&&data.hSign.HouseSignName)||[];
   var hNakArr=(data.hNak&&data.hNak.HouseConstellation)||[];
 
   var houses=[];
