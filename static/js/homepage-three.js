@@ -1,6 +1,6 @@
 /* ============================================
    NAVAGRAHA TRANSIT MAP — Geocentric · Elliptical
-   Sidereal positions · March 22, 2026
+   Sidereal positions — computed live from date
    ============================================ */
 
 (function () {
@@ -136,6 +136,47 @@
       color:0xAA8855, orbit:4.6, size:0.065, texType:'ketu', isShadow:true
     }
   ];
+
+  /* ── Live Transit Update ──────────────────────── */
+  // Map English planet names to navagraha array indices
+  var PLANET_IDX = { Sun:0, Moon:1, Mercury:2, Venus:3, Mars:4, Jupiter:5, Saturn:6, Rahu:7, Ketu:8 };
+  var _transitMonthYear = null;
+  try {
+    if (typeof TransitCalc !== 'undefined') {
+      var transitData = TransitCalc.compute();
+      _transitMonthYear = transitData.monthYear;
+      var pos = transitData.positions;
+      Object.keys(PLANET_IDX).forEach(function(name) {
+        var idx = PLANET_IDX[name];
+        var p = pos[name];
+        if (!p) return;
+        var d = navagrahas[idx];
+        d.sign = p.sign;
+        d.signEn = p.signEn;
+        d.degree = p.degree;
+        d.longitude = p.longitude;
+        d.nakshatra = p.nakshatra;
+        d.pada = p.pada;
+        d.nkRuler = p.nkRuler;
+        d.nkDeity = p.nkDeity;
+        d.transitIn = p.transitIn;
+        d.transitOut = p.transitOut;
+        d.status = p.status;
+        d.dignityNote = p.dignityNote;
+        d.yogas = p.yogas;
+        d.transit = p.transit;
+        if (p.special) d.special = p.special;
+        else delete d.special;
+      });
+      // Update subtitle
+      var subtitle = document.querySelector('.hero-solar-title p');
+      if (subtitle) subtitle.textContent = 'Live sidereal positions \u00b7 ' + transitData.monthYear + ' \u00b7 Hover to explore';
+    }
+  } catch (e) {
+    // Fallback: keep hardcoded March 2026 data
+    if (typeof console !== 'undefined') console.warn('TransitCalc error, using fallback data:', e);
+  }
+  var _transitMonth = _transitMonthYear || 'March 2026';
 
   /* ── Earth data for tooltip ──────────────────── */
   var earthData = {
@@ -469,7 +510,7 @@
     '</div>'+
     '<p class="planet-signify">'+d.signify+'</p>'+yg+
     '<p class="planet-transit">'+d.transit+'</p>'+
-    '<span class="planet-tooltip-hint">Sidereal transit · March 2026 · Geocentric</span>';
+    '<span class="planet-tooltip-hint">Sidereal transit · ' + _transitMonth + ' · Geocentric</span>';
   }
 
   function buildRashiTip(r){
