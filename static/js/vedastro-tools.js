@@ -381,9 +381,15 @@ async function generateBirthChart(e){
 
   try{
     // Only 3 API calls (within 5/min free tier) — everything else computed locally
+    // Retry helper for transient failures
+    async function tryAPI(endpoint,retries){
+      for(var t=0;t<=retries;t++){
+        try{return await callAPI(endpoint);}catch(e){if(t===retries)throw e;await delay(1500);}
+      }
+    }
     var results=await Promise.all([
-      callAPI('PlanetNirayanaLongitude/PlanetName/All/'+ep),
-      callAPI('HouseRasiSign/HouseName/House1/'+ep),
+      tryAPI('PlanetNirayanaLongitude/PlanetName/All/'+ep,1),
+      tryAPI('HouseRasiSign/HouseName/House1/'+ep,1),
       callAPI('IsPlanetRetrograde/PlanetName/All/'+ep).catch(function(){return null;})
     ]);
     var longs=results[0],ascData=results[1],retroData=results[2];
