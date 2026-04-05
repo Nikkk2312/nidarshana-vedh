@@ -598,9 +598,10 @@ var NAT_FRIENDS={
 };
 function getDignity(planet,sign,deg){
   var d=DIGNITY_DATA[planet];if(!d)return{status:'',cls:''};
+  // Check moolatrikona BEFORE exaltation when they share the same sign
+  if(d.mt&&sign===d.mt){var inM=true;if(d.mtS!==undefined&&deg<d.mtS)inM=false;if(d.mtE!==undefined&&deg>d.mtE)inM=false;if(inM)return{status:'Moolatrikona',cls:'dignity-moola'};}
   if(sign===d.ex)return{status:'Exalted',cls:'dignity-exalted'};
   if(sign===d.db)return{status:'Debilitated',cls:'dignity-debilitated'};
-  if(d.mt&&sign===d.mt){var inM=true;if(d.mtS!==undefined&&deg<d.mtS)inM=false;if(d.mtE!==undefined&&deg>d.mtE)inM=false;if(inM)return{status:'Moolatrikona',cls:'dignity-moola'};}
   if(d.own&&d.own.indexOf(sign)!==-1)return{status:'Own Sign',cls:'dignity-own'};
   var lord=SIGN_RULER[sign];if(!lord||!NAT_FRIENDS[planet])return{status:'',cls:''};
   var nf=NAT_FRIENDS[planet];
