@@ -515,6 +515,7 @@ function renderKundali(data,lt){
   var moonSign=panchang?panchang.moonSign:'';
   var sadeSati=computeSadeSati(moonSign);
   var yogas=computeYogas(planetData,houses);
+  yogas=computeExtendedYogas(planetData,houses,yogas);
   renderYogaDosha(yogas,mangalDosha,kaalSarp,sadeSati);
 
   // === PLANET TABLE (with Dignity column) ===
@@ -553,6 +554,22 @@ function renderKundali(data,lt){
     var pls=rPlanets[i].length?rPlanets[i].join(', '):'—';
     htb.innerHTML+='<tr><td><strong>'+HOUSE_NAMES[i]+'</strong></td><td>'+h.sign+'</td><td>'+h.lord+'</td><td>'+h.nakshatra+'</td><td>'+pls+'</td></tr>';
   });
+
+  // === ASHTAKAVARGA ===
+  var lagnaIdx=SIGNS_ORDER.indexOf(houses[0].sign);
+  var avData=computeAshtakavarga(planetData,lagnaIdx>=0?lagnaIdx:0);
+  renderAshtakavarga(avData,houses);
+
+  // === PLANET RELATIONSHIPS ===
+  var rels=computeRelationships(planetData);
+  renderRelationships(rels);
+
+  // === PREDICTIONS ===
+  var preds=computePredictions(planetData,houses,yogas,mangalDosha);
+  renderPredictions(preds);
+
+  // === REMEDIES ===
+  renderRemedies(planetData);
 }
 
 
@@ -894,6 +911,452 @@ function renderCurrentDashaSummary(data){
   }
   html+='</div>';
   el.innerHTML=html;
+}
+
+
+// ===== ASHTAKAVARGA =====
+// Benefic point rules from Brihat Parashara Hora Shastra
+// AV[planet][contributor] = houses from contributor that give a bindu (1-indexed)
+var AV={
+Sun:{Su:[1,2,4,7,8,9,10,11],Mo:[3,6,10,11],Ma:[1,2,4,7,8,9,10,11],Me:[3,5,6,9,10,11,12],Ju:[5,6,9,11],Ve:[6,7,12],Sa:[1,2,4,7,8,9,10,11],La:[3,4,6,10,11,12]},
+Moon:{Su:[3,6,7,8,10,11],Mo:[1,3,6,7,10,11],Ma:[2,3,5,6,9,10,11],Me:[1,3,4,5,7,8,10,11],Ju:[1,4,7,8,10,11,12],Ve:[3,4,5,7,9,10,11],Sa:[3,5,6,11],La:[3,6,10,11]},
+Mars:{Su:[3,5,6,10,11],Mo:[3,6,11],Ma:[1,2,4,7,8,10,11],Me:[3,5,6,11],Ju:[6,10,11,12],Ve:[6,8,11,12],Sa:[1,4,7,8,9,10,11],La:[1,3,6,10,11]},
+Mercury:{Su:[5,6,9,11,12],Mo:[2,4,6,8,10,11],Ma:[1,2,4,7,8,9,10,11],Me:[1,3,5,6,9,10,11,12],Ju:[6,8,11,12],Ve:[1,2,3,4,5,8,9,11],Sa:[1,2,4,7,8,9,10,11],La:[1,2,4,6,8,10,11]},
+Jupiter:{Su:[1,2,3,4,7,8,9,10,11],Mo:[2,5,7,9,11],Ma:[1,2,4,7,8,10,11],Me:[1,2,4,5,6,9,10,11],Ju:[1,2,3,4,7,8,10,11],Ve:[2,5,6,9,10,11],Sa:[3,5,6,12],La:[1,2,4,5,6,7,9,10,11]},
+Venus:{Su:[8,11,12],Mo:[1,2,3,4,5,8,9,11,12],Ma:[3,5,6,9,11,12],Me:[3,5,6,9,11],Ju:[5,8,9,10,11],Ve:[1,2,3,4,5,8,9,10,11],Sa:[3,4,5,8,9,10,11],La:[1,2,3,4,5,8,9,11]},
+Saturn:{Su:[1,2,4,7,8,10,11],Mo:[3,6,11],Ma:[3,5,6,10,11,12],Me:[6,8,9,10,11,12],Ju:[5,6,11,12],Ve:[6,11,12],Sa:[3,5,6,11],La:[1,3,4,6,10,11]}
+};
+var AV_PLANETS=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+var AV_ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa'};
+
+function computeAshtakavarga(planetData,lagnaSignIdx){
+  var pIdx={};
+  planetData.forEach(function(p){pIdx[AV_ABBR[p.name]||'']=SIGNS_ORDER.indexOf(p.sign);});
+  pIdx.La=lagnaSignIdx;
+  var result={},sarva=new Array(12).fill(0);
+  AV_PLANETS.forEach(function(planet){
+    var ab=AV_ABBR[planet];
+    var bindus=new Array(12).fill(0);
+    var rules=AV[planet];
+    // Contributions from each planet + Lagna
+    ['Su','Mo','Ma','Me','Ju','Ve','Sa','La'].forEach(function(ref){
+      var refIdx=pIdx[ref];if(refIdx===undefined||refIdx<0)return;
+      var offsets=rules[ref];if(!offsets)return;
+      offsets.forEach(function(h){bindus[(refIdx+h-1)%12]++;});
+    });
+    result[planet]=bindus;
+    for(var i=0;i<12;i++)sarva[i]+=bindus[i];
+  });
+  result.Total=sarva;
+  // Compute totals per planet
+  AV_PLANETS.forEach(function(p){var s=0;result[p].forEach(function(b){s+=b;});result[p].total=s;});
+  var st=0;sarva.forEach(function(b){st+=b;});result.grandTotal=st;
+  return result;
+}
+
+function renderAshtakavarga(avData,houses){
+  var el=document.getElementById('ashtakavarga-card');if(!el)return;
+  // Sarvashtakavarga table
+  var html='<div class="av-section"><h4 class="yd-heading">Sarvashtakavarga (Total Benefic Points per Sign)</h4>';
+  html+='<div class="av-bar-chart">';
+  var avg=Math.round(avData.grandTotal/12);
+  for(var i=0;i<12;i++){
+    var sign=houses[i]?houses[i].sign:'';
+    var val=avData.Total[i];
+    var pct=Math.round((val/48)*100);
+    var cls=val>=30?'av-bar-high':val>=25?'av-bar-mid':'av-bar-low';
+    html+='<div class="av-bar-col"><div class="av-bar-val">'+val+'</div><div class="av-bar '+cls+'" style="height:'+pct+'%"></div><div class="av-bar-sign">'+SIGN_ABBR[sign]+'</div></div>';
+  }
+  html+='</div><p class="table-note">Total: '+avData.grandTotal+'/337 &nbsp;|&nbsp; Average per sign: '+avg+' &nbsp;|&nbsp; Signs with 28+ bindus are strong for transits</p></div>';
+
+  // Bhinnashtakavarga table
+  html+='<div class="av-section"><h4 class="yd-heading">Bhinnashtakavarga (Individual Planet Points)</h4>';
+  html+='<div class="result-table-wrap"><table class="result-table compact-table av-table"><thead><tr><th>Planet</th>';
+  for(var i=0;i<12;i++){var sign=houses[i]?houses[i].sign:'';html+='<th>'+SIGN_ABBR[sign]+'</th>';}
+  html+='<th>Total</th></tr></thead><tbody>';
+  AV_PLANETS.forEach(function(p){
+    html+='<tr><td><strong>'+p+'</strong></td>';
+    avData[p].forEach(function(b){
+      var cls=b>=5?'av-high':b>=3?'av-mid':'av-low';
+      html+='<td class="'+cls+'">'+b+'</td>';
+    });
+    html+='<td><strong>'+avData[p].total+'</strong></td></tr>';
+  });
+  // Sarva row
+  html+='<tr class="av-sarva-row"><td><strong>Sarva</strong></td>';
+  avData.Total.forEach(function(b){html+='<td><strong>'+b+'</strong></td>';});
+  html+='<td><strong>'+avData.grandTotal+'</strong></td></tr>';
+  html+='</tbody></table></div></div>';
+  el.innerHTML=html;
+}
+
+
+// ===== PLANET RELATIONSHIPS TABLE =====
+function computeRelationships(planetData){
+  // Temporal: planets in 2,3,4,10,11,12 from a planet are temporal friends; 5,6,7,8,9 are temporal enemies; same house varies
+  var pHouse={};
+  planetData.forEach(function(p){pHouse[p.name]=parseInt(p.house.replace('House',''),10);});
+  var rels={};
+  var MAIN7=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+  MAIN7.forEach(function(p){
+    rels[p]={};
+    MAIN7.forEach(function(q){
+      if(p===q)return;
+      // Natural relationship
+      var nf=NAT_FRIENDS[p];var nat='neutral';
+      if(nf.f.indexOf(q)!==-1)nat='friend';
+      else if(nf.e.indexOf(q)!==-1)nat='enemy';
+      // Temporal relationship
+      var diff=((pHouse[q]-pHouse[p])+12)%12; // 0=same house
+      var temp=(diff>=1&&diff<=3)||(diff>=9&&diff<=11)?'friend':'enemy';
+      if(diff===0)temp='enemy';
+      // Compound (Panchadha Maitri)
+      var compound='';
+      if(nat==='friend'&&temp==='friend')compound='Best Friend';
+      else if(nat==='friend'&&temp==='enemy')compound='Neutral';
+      else if(nat==='neutral'&&temp==='friend')compound='Friend';
+      else if(nat==='neutral'&&temp==='enemy')compound='Enemy';
+      else if(nat==='enemy'&&temp==='friend')compound='Neutral';
+      else if(nat==='enemy'&&temp==='enemy')compound='Bitter Enemy';
+      rels[p][q]={nat:nat,temp:temp,compound:compound};
+    });
+  });
+  return rels;
+}
+
+function renderRelationships(rels){
+  var el=document.getElementById('relationships-card');if(!el)return;
+  var MAIN7=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
+  var html='<div class="result-table-wrap"><table class="result-table compact-table rel-table"><thead><tr><th></th>';
+  MAIN7.forEach(function(p){html+='<th>'+AV_ABBR[p]+'</th>';});
+  html+='</tr></thead><tbody>';
+  MAIN7.forEach(function(p){
+    html+='<tr><td><strong>'+p+'</strong></td>';
+    MAIN7.forEach(function(q){
+      if(p===q){html+='<td class="rel-self">—</td>';return;}
+      var r=rels[p][q];
+      var cls='rel-'+r.compound.toLowerCase().replace(/\s+/g,'-');
+      var ab=r.compound==='Best Friend'?'BF':r.compound==='Bitter Enemy'?'BE':r.compound==='Friend'?'F':r.compound==='Enemy'?'E':'N';
+      html+='<td class="'+cls+'" title="'+p+' → '+q+': '+r.compound+' (Natural: '+r.nat+', Temporal: '+r.temp+')">'+ab+'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='<p class="table-note">BF = Best Friend &nbsp; F = Friend &nbsp; N = Neutral &nbsp; E = Enemy &nbsp; BE = Bitter Enemy<br>Hover for details (Natural + Temporal = Compound relationship)</p>';
+  el.innerHTML=html;
+}
+
+
+// ===== REMEDIES DATA =====
+var REMEDIES_DATA={
+  Sun:{gem:'Ruby (Manik)',color:'Red, Copper, Orange',day:'Sunday',metal:'Gold, Copper',deity:'Lord Surya / Vishnu',mantra:'ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः',mantraEn:'Om Hraam Hreem Hraum Sah Suryaya Namah',charity:'Wheat, jaggery, copper vessel, red cloth',fast:'Sunday fast',rudraksha:'1 Mukhi or 12 Mukhi',direction:'East'},
+  Moon:{gem:'Pearl (Moti)',color:'White, Silver, Cream',day:'Monday',metal:'Silver',deity:'Lord Shiva / Parvati',mantra:'ॐ श्रां श्रीं श्रौं सः चन्द्राय नमः',mantraEn:'Om Shraam Shreem Shraum Sah Chandraya Namah',charity:'Rice, white cloth, silver, milk, curd',fast:'Monday fast',rudraksha:'2 Mukhi',direction:'North-West'},
+  Mars:{gem:'Red Coral (Moonga)',color:'Red, Scarlet',day:'Tuesday',metal:'Copper, Gold',deity:'Lord Hanuman / Kartikeya',mantra:'ॐ क्रां क्रीं क्रौं सः भौमाय नमः',mantraEn:'Om Kraam Kreem Kraum Sah Bhaumaya Namah',charity:'Red lentils (masoor dal), jaggery, red cloth',fast:'Tuesday fast',rudraksha:'3 Mukhi',direction:'South'},
+  Mercury:{gem:'Emerald (Panna)',color:'Green',day:'Wednesday',metal:'Bronze, Brass',deity:'Lord Vishnu / Budh',mantra:'ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः',mantraEn:'Om Braam Breem Braum Sah Budhaya Namah',charity:'Green moong dal, green cloth, green vegetables',fast:'Wednesday fast',rudraksha:'4 Mukhi',direction:'North'},
+  Jupiter:{gem:'Yellow Sapphire (Pukhraj)',color:'Yellow, Gold',day:'Thursday',metal:'Gold',deity:'Lord Brihaspati / Vishnu',mantra:'ॐ ग्रां ग्रीं ग्रौं सः गुरवे नमः',mantraEn:'Om Graam Greem Graum Sah Gurave Namah',charity:'Yellow dal (chana), turmeric, banana, yellow cloth',fast:'Thursday fast',rudraksha:'5 Mukhi',direction:'North-East'},
+  Venus:{gem:'Diamond (Heera) / Opal',color:'White, Pink, Multicolor',day:'Friday',metal:'Silver, Platinum',deity:'Goddess Lakshmi / Shukracharya',mantra:'ॐ द्रां द्रीं द्रौं सः शुक्राय नमः',mantraEn:'Om Draam Dreem Draum Sah Shukraya Namah',charity:'White rice, ghee, white cloth, perfume, sugar',fast:'Friday fast',rudraksha:'6 Mukhi',direction:'South-East'},
+  Saturn:{gem:'Blue Sapphire (Neelam) / Amethyst',color:'Blue, Black, Dark',day:'Saturday',metal:'Iron, Steel',deity:'Lord Shani / Hanuman',mantra:'ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः',mantraEn:'Om Praam Preem Praum Sah Shanaischaraya Namah',charity:'Mustard oil, black sesame, iron, black cloth, urad dal',fast:'Saturday fast',rudraksha:'7 Mukhi or 14 Mukhi',direction:'West'},
+  Rahu:{gem:'Hessonite Garnet (Gomed)',color:'Smoky, Brownish',day:'Saturday',metal:'Lead, Mixed metals',deity:'Goddess Durga / Saraswati',mantra:'ॐ भ्रां भ्रीं भ्रौं सः राहवे नमः',mantraEn:'Om Bhraam Bhreem Bhraum Sah Rahave Namah',charity:'Mustard, blanket, coconut, blue cloth',fast:'Saturday fast',rudraksha:'8 Mukhi',direction:'South-West'},
+  Ketu:{gem:'Cat\'s Eye (Lehsunia)',color:'Grey, Smoky',day:'Tuesday/Saturday',metal:'Iron, Mixed metals',deity:'Lord Ganesha / Chitragupta',mantra:'ॐ स्रां स्रीं स्रौं सः केतवे नमः',mantraEn:'Om Sraam Sreem Sraum Sah Ketave Namah',charity:'Sesame, seven grains, blanket, dog food',fast:'Tuesday / Saturday fast',rudraksha:'9 Mukhi',direction:'South-West'}
+};
+
+function renderRemedies(planetData){
+  var el=document.getElementById('remedies-card');if(!el)return;
+  var html='';
+  // Find weak/afflicted planets (debilitated, enemy sign, combust, retrograde in dusthana)
+  var weakPlanets=[],strongPlanets=[];
+  planetData.forEach(function(p){
+    if(p.name==='Rahu'||p.name==='Ketu')return;
+    var d=getDignity(p.name,p.sign,p.totalDeg);
+    if(d.status==='Debilitated'||d.status==="Enemy's Sign"||p.combust)weakPlanets.push(p);
+    else if(d.status==='Exalted'||d.status==='Own Sign'||d.status==='Moolatrikona')strongPlanets.push(p);
+  });
+
+  if(weakPlanets.length){
+    html+='<div class="yd-section"><h4 class="yd-heading">Recommended Remedies (for afflicted planets)</h4>';
+    weakPlanets.forEach(function(p){
+      var r=REMEDIES_DATA[p.name];if(!r)return;
+      var d=getDignity(p.name,p.sign,p.totalDeg);
+      var reason=[];
+      if(d.status==='Debilitated')reason.push('debilitated in '+p.sign);
+      if(d.status==="Enemy's Sign")reason.push("in enemy's sign "+p.sign);
+      if(p.combust)reason.push('combust');
+      html+='<div class="remedy-item"><div class="remedy-header"><strong>'+p.name+'</strong><span class="remedy-reason">('+reason.join(', ')+')</span></div>';
+      html+='<div class="remedy-grid">';
+      html+='<div class="remedy-detail"><span class="remedy-label">Gemstone</span>'+r.gem+'</div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Mantra</span><span class="remedy-mantra">'+r.mantra+'</span><br><span style="font-size:0.72rem;color:var(--ink-dim)">'+r.mantraEn+'</span></div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Color</span>'+r.color+'</div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Day</span>'+r.day+'</div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Deity</span>'+r.deity+'</div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Charity</span>'+r.charity+'</div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Fasting</span>'+r.fast+'</div>';
+      html+='<div class="remedy-detail"><span class="remedy-label">Rudraksha</span>'+r.rudraksha+'</div>';
+      html+='</div></div>';
+    });
+    html+='</div>';
+  }
+
+  // Favourable items for strong planets
+  html+='<div class="yd-section"><h4 class="yd-heading">Favourable Items (Lucky Gemstones, Colors & Days)</h4>';
+  html+='<div class="result-table-wrap"><table class="result-table compact-table"><thead><tr><th>Planet</th><th>Gemstone</th><th>Color</th><th>Day</th><th>Metal</th><th>Direction</th></tr></thead><tbody>';
+  PLANETS.forEach(function(name){
+    var r=REMEDIES_DATA[name];if(!r)return;
+    var d=getDignity(name,''+(planetData.find(function(p){return p.name===name;})||{}).sign,0);
+    html+='<tr><td><strong>'+name+'</strong></td><td>'+r.gem+'</td><td>'+r.color+'</td><td>'+r.day+'</td><td>'+r.metal+'</td><td>'+r.direction+'</td></tr>';
+  });
+  html+='</tbody></table></div></div>';
+  el.innerHTML=html;
+}
+
+
+// ===== EXTENDED YOGA DETECTION =====
+function computeExtendedYogas(planetData,houses,existingYogas){
+  var yogas=existingYogas.slice();
+  var pH={},pS={},pD={};
+  planetData.forEach(function(p){
+    pH[p.name]=parseInt(p.house.replace('House',''),10);
+    pS[p.name]=p.sign;
+    pD[p.name]=getDignity(p.name,p.sign,p.totalDeg);
+  });
+  function hLord(n){return houses[n-1]?SIGN_RULER[houses[n-1].sign]||'':'';}
+  function conj(a,b){return pH[a]===pH[b];}
+  function inKendra(h,ref){var d=((h-ref)+12)%12;return d===0||d===3||d===6||d===9;}
+  var moonH=pH['Moon'],sunH=pH['Sun'];
+
+  // Sunapha: planet (not Sun/Rahu/Ketu) in 2nd from Moon
+  var h2m=(moonH%12)+1;
+  planetData.forEach(function(p){
+    if(['Moon','Sun','Rahu','Ketu'].indexOf(p.name)!==-1)return;
+    if(pH[p.name]===h2m)yogas.push({name:'Sunapha Yoga',type:'benefic',desc:p.name+' in 2nd from Moon — self-made wealth, intelligence, good reputation.'});
+  });
+  // Anapha: planet (not Sun/Rahu/Ketu) in 12th from Moon
+  var h12m=((moonH-2+12)%12)+1;
+  planetData.forEach(function(p){
+    if(['Moon','Sun','Rahu','Ketu'].indexOf(p.name)!==-1)return;
+    if(pH[p.name]===h12m)yogas.push({name:'Anapha Yoga',type:'benefic',desc:p.name+' in 12th from Moon — healthy, virtuous, well-spoken, famous.'});
+  });
+  // Durudhara: planets on both sides of Moon (2nd and 12th)
+  var has2=false,has12=false;
+  planetData.forEach(function(p){if(['Moon','Sun','Rahu','Ketu'].indexOf(p.name)!==-1)return;if(pH[p.name]===h2m)has2=true;if(pH[p.name]===h12m)has12=true;});
+  if(has2&&has12)yogas.push({name:'Durudhara Yoga',type:'benefic',desc:'Planets flanking Moon on both sides — wealth, vehicles, generous nature, fame.'});
+
+  // Adhi Yoga: natural benefics in 6,7,8 from Moon
+  var advH=[(moonH+5)%12+1,(moonH+6)%12+1,(moonH+7)%12+1];
+  var adhiBenefics=0;
+  planetData.forEach(function(p){
+    if(['Jupiter','Venus','Mercury'].indexOf(p.name)!==-1&&advH.indexOf(pH[p.name])!==-1)adhiBenefics++;
+  });
+  if(adhiBenefics>=2)yogas.push({name:'Adhi Yoga',type:'benefic',desc:'Benefics in 6th/7th/8th from Moon — polite, trustworthy, affluent, able to defeat adversaries.'});
+
+  // Veshi Yoga: planet (not Moon/Rahu/Ketu) in 2nd from Sun
+  var h2s=(sunH%12)+1;
+  planetData.forEach(function(p){
+    if(['Sun','Moon','Rahu','Ketu'].indexOf(p.name)!==-1)return;
+    if(pH[p.name]===h2s){
+      var isBenefic=['Jupiter','Venus','Mercury'].indexOf(p.name)!==-1;
+      if(isBenefic)yogas.push({name:'Veshi Yoga (Benefic)',type:'benefic',desc:p.name+' in 2nd from Sun — truthful, lazy-free, balanced, happy.'});
+    }
+  });
+  // Voshi Yoga: planet in 12th from Sun
+  var h12s=((sunH-2+12)%12)+1;
+  planetData.forEach(function(p){
+    if(['Sun','Moon','Rahu','Ketu'].indexOf(p.name)!==-1)return;
+    if(pH[p.name]===h12s){
+      var isBenefic=['Jupiter','Venus','Mercury'].indexOf(p.name)!==-1;
+      if(isBenefic)yogas.push({name:'Voshi Yoga (Benefic)',type:'benefic',desc:p.name+' in 12th from Sun — learned, charitable, good memory, skilled.'});
+    }
+  });
+  // Ubhayachari: planets on both sides of Sun
+  var sunHas2=false,sunHas12=false;
+  planetData.forEach(function(p){if(['Sun','Moon','Rahu','Ketu'].indexOf(p.name)!==-1)return;if(pH[p.name]===h2s)sunHas2=true;if(pH[p.name]===h12s)sunHas12=true;});
+  if(sunHas2&&sunHas12)yogas.push({name:'Ubhayachari Yoga',type:'benefic',desc:'Planets on both sides of Sun — king-like, eloquent, handsome, prosperous.'});
+
+  // Chatussagara Yoga: all 4 kendras (1,4,7,10) occupied by planets
+  var kendraOcc=[false,false,false,false];
+  planetData.forEach(function(p){
+    if(p.name==='Rahu'||p.name==='Ketu')return;
+    if(pH[p.name]===1)kendraOcc[0]=true;
+    if(pH[p.name]===4)kendraOcc[1]=true;
+    if(pH[p.name]===7)kendraOcc[2]=true;
+    if(pH[p.name]===10)kendraOcc[3]=true;
+  });
+  if(kendraOcc.every(function(k){return k;}))yogas.push({name:'Chatussagara Yoga',type:'benefic',desc:'All four kendras occupied — fame, long life, pure character, equal to a king.'});
+
+  // Parivartana Yoga: mutual exchange of house lords
+  for(var i=1;i<=12;i++){
+    var li=hLord(i);if(!li)continue;
+    for(var j=i+1;j<=12;j++){
+      var lj=hLord(j);if(!lj)continue;
+      if(pH[li]===j&&pH[lj]===i){
+        var isDusthana=[6,8,12].indexOf(i)!==-1||[6,8,12].indexOf(j)!==-1;
+        if(isDusthana)yogas.push({name:'Dainya Parivartana Yoga',type:'challenging',desc:'Exchange between '+i+getSuffix(i)+' and '+j+getSuffix(j)+' house lords ('+li+' ↔ '+lj+') — one involves a dusthana, karmic lessons.'});
+        else yogas.push({name:'Maha Parivartana Yoga',type:'benefic',desc:'Mutual exchange of '+i+getSuffix(i)+' and '+j+getSuffix(j)+' house lords ('+li+' ↔ '+lj+') — both houses strengthened, excellent results.'});
+      }
+    }
+  }
+
+  // Guru-Chandal Yoga: Jupiter with Rahu or Ketu
+  if(conj('Jupiter','Rahu'))yogas.push({name:'Guru-Chandal Yoga',type:'challenging',desc:'Jupiter conjunct Rahu — unconventional beliefs, breaking traditions. Can give great intelligence if well-placed.'});
+  if(conj('Jupiter','Ketu'))yogas.push({name:'Guru-Chandal Yoga (Ketu)',type:'challenging',desc:'Jupiter conjunct Ketu — spiritual inclination but confusion in beliefs. Deep mystical insight possible.'});
+
+  // Shakat Yoga: Jupiter in 6th or 8th from Moon
+  var jmDiff=((pH['Jupiter']-moonH)+12)%12;
+  if(jmDiff===5||jmDiff===7)yogas.push({name:'Shakata Yoga',type:'challenging',desc:'Jupiter in 6th/8th from Moon — fluctuating fortune, ups and downs in life. Cancelled if Jupiter is in kendra from Lagna.'});
+
+  // Parvata Yoga: benefics in kendras and no malefics in kendras
+  var beneficsInKendra=0,maleficsInKendra=0;
+  planetData.forEach(function(p){
+    if(!inKendra(pH[p.name],1))return;
+    if(['Jupiter','Venus','Mercury','Moon'].indexOf(p.name)!==-1)beneficsInKendra++;
+    if(['Mars','Saturn','Rahu','Ketu'].indexOf(p.name)!==-1)maleficsInKendra++;
+  });
+  if(beneficsInKendra>=2&&maleficsInKendra===0)yogas.push({name:'Parvata Yoga',type:'benefic',desc:'Benefics in kendras without malefic influence — wealthy, charitable, leader, long-lived.'});
+
+  // Kahala Yoga: 4th lord and Jupiter in mutual kendras
+  var l4=hLord(4);
+  if(l4&&inKendra(pH[l4],pH['Jupiter'])&&pH[l4]!==pH['Jupiter'])yogas.push({name:'Kahala Yoga',type:'benefic',desc:'4th lord and Jupiter in mutual kendras — stubborn, brave, heads a small army or team, daring.'});
+
+  // Budh-Aditya Yoga strength check (already detected, enhance if in good houses)
+  // Chandra-Mangal already detected
+
+  // Vasumati Yoga: benefics in upachaya houses (3,6,10,11)
+  var upachayaBenefics=0;
+  planetData.forEach(function(p){
+    if(['Jupiter','Venus','Mercury'].indexOf(p.name)===-1)return;
+    if([3,6,10,11].indexOf(pH[p.name])!==-1)upachayaBenefics++;
+  });
+  if(upachayaBenefics>=3)yogas.push({name:'Vasumati Yoga',type:'benefic',desc:'Benefics in upachaya houses (3/6/10/11) — ever-growing wealth, prosperous.'});
+
+  // Shubh Kartari Yoga on Lagna: benefics in 2nd and 12th from Lagna
+  var b2=false,b12=false,m2=false,m12=false;
+  planetData.forEach(function(p){
+    var isBen=['Jupiter','Venus','Mercury'].indexOf(p.name)!==-1;
+    var isMal=['Mars','Saturn','Rahu','Ketu'].indexOf(p.name)!==-1;
+    if(pH[p.name]===2){if(isBen)b2=true;if(isMal)m2=true;}
+    if(pH[p.name]===12){if(isBen)b12=true;if(isMal)m12=true;}
+  });
+  if(b2&&b12&&!m2&&!m12)yogas.push({name:'Shubh Kartari Yoga',type:'benefic',desc:'Benefics flanking the Ascendant (in 2nd and 12th) — protected, fortunate, auspicious personality.'});
+  if(m2&&m12&&!b2&&!b12)yogas.push({name:'Papa Kartari Yoga',type:'challenging',desc:'Malefics flanking the Ascendant (in 2nd and 12th) — obstacles, restrictions, feeling hemmed in. Requires perseverance.'});
+
+  // Sasa Yoga / Ruchaka / etc already covered in base yogas
+
+  // Deduplicate
+  var seen={};yogas=yogas.filter(function(y){var key=y.name+y.desc.substring(0,30);if(seen[key])return false;seen[key]=true;return true;});
+  return yogas;
+}
+
+
+// ===== PREDICTIONS BY LIFE AREA =====
+function computePredictions(planetData,houses,yogas,mangalDosha){
+  var pH={},pD={};
+  planetData.forEach(function(p){
+    pH[p.name]=parseInt(p.house.replace('House',''),10);
+    pD[p.name]=getDignity(p.name,p.sign,p.totalDeg);
+  });
+  function hLord(n){return houses[n-1]?SIGN_RULER[houses[n-1].sign]||'':'';}
+  function lordStrength(n){var l=hLord(n);return l?pD[l]:{status:''};}
+  function planetsIn(n){return planetData.filter(function(p){return pH[p.name]===n;});}
+
+  var preds={};
+
+  // CAREER (10th house)
+  var l10=hLord(10),l10d=lordStrength(10),p10=planetsIn(10);
+  var careerText='Your 10th house (Karma Bhava) is ruled by <strong>'+l10+'</strong>';
+  if(l10d.status)careerText+=' which is '+l10d.status.toLowerCase()+' in your chart';
+  careerText+='. ';
+  if(p10.length){careerText+='With '+p10.map(function(p){return p.name;}).join(', ')+' influencing your career house, ';}
+  if(l10d.status==='Exalted'||l10d.status==='Own Sign')careerText+='you have strong professional potential — leadership and recognition come naturally.';
+  else if(l10d.status==='Debilitated'||l10d.status==="Enemy's Sign")careerText+='career growth may require extra effort and patience. Remedies for '+l10+' can help.';
+  else careerText+='your career path is steady with room for growth through focused effort.';
+  if(p10.some(function(p){return p.name==='Saturn';}))careerText+=' Saturn in 10th gives slow but lasting success through discipline and hard work.';
+  if(p10.some(function(p){return p.name==='Jupiter';}))careerText+=' Jupiter in 10th is highly auspicious — wisdom, ethics and expansion in profession.';
+  if(p10.some(function(p){return p.name==='Sun';}))careerText+=' Sun in 10th gives authority, government connections, and leadership roles.';
+  preds.career=careerText;
+
+  // MARRIAGE (7th house)
+  var l7=hLord(7),l7d=lordStrength(7),p7=planetsIn(7);
+  var marriageText='Your 7th house (Kalatra Bhava) is ruled by <strong>'+l7+'</strong>';
+  if(l7d.status)marriageText+=' which is '+l7d.status.toLowerCase();
+  marriageText+='. ';
+  var venusD=pD['Venus'];
+  if(venusD.status==='Exalted'||venusD.status==='Own Sign')marriageText+='Venus (marriage karaka) is strong — harmonious relationships and marital happiness indicated. ';
+  else if(venusD.status==='Debilitated')marriageText+='Venus is debilitated — relationships may face challenges. Venus remedies recommended. ';
+  if(mangalDosha&&mangalDosha.present){
+    marriageText+='Mangal Dosha is present'+(mangalDosha.cancelled?' but cancelled/weakened':'— matching with a compatible partner is advised')+'. ';
+  }
+  if(p7.some(function(p){return p.name==='Saturn';}))marriageText+='Saturn in 7th may delay marriage but brings a mature, lasting partnership.';
+  else if(p7.some(function(p){return p.name==='Jupiter';}))marriageText+='Jupiter\'s aspect on the 7th house blesses marriage with wisdom, trust and devotion.';
+  preds.marriage=marriageText;
+
+  // WEALTH (2nd + 11th)
+  var l2=hLord(2),l11=hLord(11);
+  var wealthText='Your wealth houses are ruled by <strong>'+l2+'</strong> (2nd — savings) and <strong>'+l11+'</strong> (11th — gains). ';
+  var jupD=pD['Jupiter'];
+  if(jupD.status==='Exalted'||jupD.status==='Own Sign')wealthText+='Jupiter (wealth karaka) is strong — excellent financial potential. ';
+  else if(jupD.status==='Debilitated')wealthText+='Jupiter is weak — wealth accumulation may require more effort. ';
+  var dhanaYoga=yogas.some(function(y){return y.name==='Dhana Yoga';});
+  if(dhanaYoga)wealthText+='Dhana Yoga present — strong potential for wealth creation. ';
+  var lakshmYoga=yogas.some(function(y){return y.name==='Lakshmi Yoga';});
+  if(lakshmYoga)wealthText+='Lakshmi Yoga blesses with fortune and prosperity. ';
+  wealthText+='Focus on '+lordStrength(2).status==='Exalted'||lordStrength(2).status==='Own Sign'?'growing your savings — your 2nd lord is well-placed.':'strengthening your financial foundation through disciplined saving.';
+  preds.wealth=wealthText;
+
+  // HEALTH (Lagna + 6th)
+  var l1=hLord(1),l6=hLord(6),l1d=lordStrength(1);
+  var healthText='Your Lagna lord <strong>'+l1+'</strong> is '+((l1d.status||'placed')).toLowerCase()+'. ';
+  var sunD=pD['Sun'],moonD=pD['Moon'];
+  if(sunD.status==='Exalted'||sunD.status==='Own Sign')healthText+='Strong Sun gives vitality and robust constitution. ';
+  if(moonD.status==='Debilitated')healthText+='Debilitated Moon may cause mental stress — meditation and Moon remedies can help. ';
+  if(l1d.status==='Exalted'||l1d.status==='Own Sign')healthText+='Strong Lagna lord indicates good overall health and recovery power.';
+  else if(l1d.status==='Debilitated')healthText+='Weakened Lagna lord suggests paying attention to health. Regular exercise and the right remedies are advised.';
+  else healthText+='Your constitution is moderate — maintain health through balanced lifestyle.';
+  preds.health=healthText;
+
+  // EDUCATION (4th + 5th)
+  var l4=hLord(4),l5=hLord(5);
+  var eduText='Your education houses are ruled by <strong>'+l4+'</strong> (4th) and <strong>'+l5+'</strong> (5th). ';
+  var mercD=pD['Mercury'];
+  if(mercD.status==='Exalted'||mercD.status==='Own Sign')eduText+='Mercury (intellect karaka) is strong — sharp mind, excellent learning capacity, analytical ability. ';
+  else if(mercD.status==='Debilitated')eduText+='Mercury is weak — may face challenges in academics. Extra focus needed. ';
+  if(jupD.status==='Exalted'||jupD.status==='Own Sign')eduText+='Strong Jupiter supports higher education, wisdom, and teaching abilities. ';
+  var budhaditya=yogas.some(function(y){return y.name==='Budhaditya Yoga';});
+  if(budhaditya)eduText+='Budhaditya Yoga enhances intelligence and academic success. ';
+  var saraswati=yogas.some(function(y){return y.name==='Saraswati Yoga';});
+  if(saraswati)eduText+='Saraswati Yoga — exceptional talent in learning, arts, and sciences.';
+  else eduText+='Consistent effort will yield good academic results.';
+  preds.education=eduText;
+
+  return preds;
+}
+
+function renderPredictions(preds){
+  var el=document.getElementById('predictions-card');if(!el)return;
+  var areas=[
+    {key:'career',icon:'◉',title:'Career & Profession'},
+    {key:'wealth',icon:'◈',title:'Wealth & Finance'},
+    {key:'marriage',icon:'◎',title:'Marriage & Relationships'},
+    {key:'health',icon:'◇',title:'Health & Vitality'},
+    {key:'education',icon:'◆',title:'Education & Learning'}
+  ];
+  var html='';
+  areas.forEach(function(a){
+    if(!preds[a.key])return;
+    html+='<div class="pred-item"><div class="pred-header"><span class="pred-icon">'+a.icon+'</span><strong>'+a.title+'</strong></div><p class="pred-text">'+preds[a.key]+'</p></div>';
+  });
+  el.innerHTML=html;
+}
+
+
+// ===== PDF EXPORT =====
+function exportPDF(){
+  var resultsView=document.getElementById('tools-results-view');
+  if(!resultsView)return;
+  // Hide buttons and non-print elements
+  var btns=resultsView.querySelectorAll('.btn, .result-cta, #current-dasha-summary');
+  btns.forEach(function(b){b.setAttribute('data-was-visible',b.style.display||'');b.style.display='none';});
+  window.print();
+  // Restore
+  setTimeout(function(){btns.forEach(function(b){b.style.display=b.getAttribute('data-was-visible')||'';b.removeAttribute('data-was-visible');});},500);
 }
 
 

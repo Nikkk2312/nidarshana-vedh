@@ -2277,6 +2277,141 @@ em { color: var(--gold-ink); }
   color: var(--ink-dim);
 }
 
+/* --- Ashtakavarga --- */
+.av-section { margin-top: 1.5rem; }
+.av-bar-chart {
+  display: flex; gap: 0.4rem; align-items: flex-end;
+  height: 160px; padding: 0.5rem 0; border-bottom: 1px solid var(--ink-dim);
+  margin-bottom: 1rem;
+}
+.av-bar-col {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 0.15rem; height: 100%;
+  justify-content: flex-end;
+}
+.av-bar-val {
+  font-size: 0.65rem; color: var(--gold-bright);
+  font-family: var(--font-ui);
+}
+.av-bar {
+  width: 100%; border-radius: 3px 3px 0 0;
+  min-height: 4px; transition: height 0.3s;
+}
+.av-bar-sign {
+  font-size: 0.55rem; color: var(--ink-dim);
+  font-family: var(--font-ui); margin-top: 0.2rem;
+  text-align: center;
+}
+.av-bar-high { background: var(--gold-bright); }
+.av-bar-mid  { background: var(--gold-muted); }
+.av-bar-low  { background: var(--red-accent); }
+
+.av-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.7rem; font-family: var(--font-ui);
+}
+.av-table th, .av-table td {
+  padding: 0.35rem 0.25rem; text-align: center;
+  border: 1px solid rgba(196,154,44,0.15);
+}
+.av-table th {
+  background: rgba(196,154,44,0.08);
+  color: var(--gold-bright); font-weight: 600;
+}
+.av-table td { color: var(--ink-body); }
+.av-high { color: var(--gold-bright); font-weight: 700; }
+.av-mid  { color: var(--ink-body); }
+.av-low  { color: var(--red-accent); font-weight: 700; }
+.av-sarva-row { background: rgba(196,154,44,0.06); font-weight: 700; }
+
+/* --- Planet Relationships --- */
+.rel-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.7rem; font-family: var(--font-ui);
+}
+.rel-table th, .rel-table td {
+  padding: 0.35rem 0.25rem; text-align: center;
+  border: 1px solid rgba(196,154,44,0.15);
+}
+.rel-table th {
+  background: rgba(196,154,44,0.08);
+  color: var(--gold-bright); font-weight: 600;
+}
+.rel-self         { background: rgba(196,154,44,0.1); color: var(--ink-dim); }
+.rel-best-friend  { background: rgba(34,139,34,0.15); color: #4caf50; font-weight: 700; }
+.rel-friend       { background: rgba(34,139,34,0.08); color: #81c784; }
+.rel-neutral      { color: var(--ink-body); }
+.rel-enemy        { background: rgba(184,58,42,0.08); color: #e57373; }
+.rel-bitter-enemy { background: rgba(184,58,42,0.15); color: var(--red-accent); font-weight: 700; }
+
+/* --- Remedies --- */
+.remedy-item {
+  background: var(--bg-card); border: 1px solid var(--gold-muted);
+  border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+}
+.remedy-header {
+  font-family: var(--font-display); font-size: 1rem;
+  color: var(--gold-bright); margin-bottom: 0.3rem;
+}
+.remedy-reason {
+  font-size: 0.75rem; color: var(--ink-dim);
+  margin-bottom: 0.75rem; font-style: italic;
+}
+.remedy-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+.remedy-detail {
+  font-size: 0.75rem; color: var(--ink-body);
+  padding: 0.3rem 0;
+}
+.remedy-label {
+  font-weight: 600; color: var(--gold-bright);
+  display: block; margin-bottom: 0.15rem;
+  font-size: 0.65rem; text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.remedy-mantra {
+  font-style: italic; color: var(--gold-muted);
+}
+
+/* --- Predictions --- */
+.pred-item {
+  background: var(--bg-card); border: 1px solid rgba(196,154,44,0.15);
+  border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;
+}
+.pred-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-display); font-size: 1rem;
+  color: var(--gold-bright); margin-bottom: 0.5rem;
+}
+.pred-icon { font-size: 1.2rem; }
+.pred-text {
+  font-size: 0.8rem; color: var(--ink-body);
+  line-height: 1.5;
+}
+
+/* --- Print / PDF --- */
+.print-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: var(--gold-muted); color: var(--bg-body);
+  border: none; padding: 0.6rem 1.2rem; border-radius: 6px;
+  font-family: var(--font-ui); font-size: 0.8rem;
+  cursor: pointer; margin-top: 1rem;
+  transition: background 0.2s;
+}
+.print-btn:hover { background: var(--gold-bright); }
+
+@media print {
+  .navbar, .footer, .sticky-cta, .tool-tabs,
+  .tool-form-wrapper, .print-btn, .kundali-cta-card { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  .kundali-result-view { display: block !important; }
+  .result-card { break-inside: avoid; border-color: #ccc !important; }
+  .av-bar-high, .av-bar-mid { background: #333 !important; }
+  .av-bar-low { background: #999 !important; }
+}
+
 /* Responsive - Tools */
 @media (max-width: 768px) {
   .tool-tabs { flex-direction: column; align-items: stretch; }
@@ -2292,6 +2427,10 @@ em { color: var(--gold-ink); }
   .summary-grid { grid-template-columns: repeat(2, 1fr); }
   .panchang-grid { grid-template-columns: repeat(2, 1fr); }
   .curr-dasha-grid { grid-template-columns: 1fr; }
+  .av-bar-chart { height: 120px; }
+  .av-bar-sign { font-size: 0.45rem; }
+  .av-table, .rel-table { font-size: 0.6rem; overflow-x: auto; display: block; }
+  .remedy-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* ============================================
