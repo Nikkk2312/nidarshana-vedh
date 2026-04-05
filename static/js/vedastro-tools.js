@@ -368,7 +368,7 @@ async function generateBirthChart(e){
     hideProgress();
     showResults('Kundali of '+name, lt.day+'/'+lt.month+'/'+lt.year+' at '+h+':'+m+' '+ap+' — '+lt.place);
     document.getElementById('kundali-results').style.display='block';
-    renderKundali(data);
+    renderKundali(data,lt);
 
     // Load dasha async (don't block chart rendering)
     var endYr=String(parseInt(lt.year)+100);
@@ -390,7 +390,7 @@ async function generateBirthChart(e){
 }
 
 
-function renderKundali(data){
+function renderKundali(data,lt){
   // === MAIN PLANETS (handle null from failed non-essential calls) ===
   var d1Arr=(data.d1&&data.d1.PlanetRasiD1Sign)||[];
   var nakArr=(data.nak&&data.nak.PlanetConstellation)||[];
@@ -449,7 +449,6 @@ function renderKundali(data){
   var karakaMap=computeKaraka(planetData);
 
   // === COMPUTE PANCHANG ===
-  var lt=getLocTime('bc');
   var panchang=computePanchang(planetData,lt);
 
   // === RENDER SUMMARY & PANCHANG ===
