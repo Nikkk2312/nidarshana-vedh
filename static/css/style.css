@@ -1970,16 +1970,16 @@ em { color: var(--gold-ink); }
   font-size: 0.72rem;
 }
 
-/* Karaka & Avastha columns */
-.compact-table td:nth-child(8),
-.compact-table td:nth-child(9) {
+/* Karaka & Avastha columns (9th=Karaka, 10th=Avastha in 10-col planet table) */
+.compact-table td:nth-child(9),
+.compact-table td:nth-child(10) {
   font-family: var(--font-ui);
   font-size: 0.72rem;
   color: var(--ink-dim);
   white-space: nowrap;
 }
 
-.compact-table td:nth-child(8) {
+.compact-table td:nth-child(9) {
   color: var(--gold-ink);
   font-weight: 500;
 }
@@ -2022,6 +2022,261 @@ em { color: var(--gold-ink); }
   font-style: italic;
 }
 
+/* ===== Summary Card ===== */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.summary-item {
+  text-align: center;
+  padding: 0.8rem 0.5rem;
+  background: var(--parchment-deep);
+  border: 1px solid rgba(196, 154, 44, 0.15);
+  border-radius: 4px;
+}
+.summary-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  margin-bottom: 0.4rem;
+}
+.summary-value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gold-bright);
+}
+
+/* ===== Panchang Card ===== */
+.panchang-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+}
+.panchang-item {
+  padding: 0.6rem;
+  border-bottom: 1px solid rgba(196, 154, 44, 0.1);
+}
+.panchang-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  margin-bottom: 0.25rem;
+}
+.panchang-value {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+/* ===== Dignity Markers ===== */
+.dignity-exalted {
+  color: var(--patina);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.dignity-debilitated {
+  color: var(--vermillion);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.dignity-moola {
+  color: var(--gold-bright);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.dignity-own {
+  color: var(--gold-ink);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+.dignity-friend {
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+}
+.dignity-enemy {
+  color: #C97A5A;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+}
+.dignity-neutral {
+  color: var(--ink-dim);
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+}
+
+/* ===== Yoga & Dosha Card ===== */
+.yd-section {
+  margin-bottom: 1.5rem;
+}
+.yd-section:last-child {
+  margin-bottom: 0;
+}
+.yd-heading {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  border-bottom: 1px solid rgba(196, 154, 44, 0.15);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+/* Dosha items */
+.dosha-item {
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.6rem;
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+}
+.dosha-active {
+  background: rgba(184, 58, 42, 0.06);
+  border-left-color: var(--vermillion);
+}
+.dosha-partial {
+  background: rgba(196, 154, 44, 0.06);
+  border-left-color: var(--gold-ink);
+}
+.dosha-absent {
+  background: rgba(74, 122, 92, 0.06);
+  border-left-color: var(--patina);
+}
+.dosha-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.3rem;
+}
+.dosha-icon {
+  font-size: 0.85rem;
+}
+.dosha-badge {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.badge-active {
+  background: rgba(184, 58, 42, 0.15);
+  color: var(--vermillion);
+}
+.badge-partial {
+  background: rgba(196, 154, 44, 0.15);
+  color: var(--gold-ink);
+}
+.badge-absent {
+  background: rgba(74, 122, 92, 0.15);
+  color: var(--patina);
+}
+.dosha-desc {
+  font-size: 0.85rem;
+  color: var(--ink-faded);
+  margin: 0;
+}
+.dosha-cancels {
+  margin: 0.4rem 0 0 1.2rem;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+.dosha-cancels li {
+  margin-bottom: 0.2rem;
+}
+
+/* Yoga items */
+.yoga-group {
+  margin-bottom: 1rem;
+}
+.yoga-group-title {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+.yoga-item {
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.4rem;
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+}
+.yoga-benefic {
+  background: rgba(74, 122, 92, 0.05);
+  border-left-color: var(--patina);
+}
+.yoga-challenging {
+  background: rgba(184, 58, 42, 0.05);
+  border-left-color: var(--vermillion);
+}
+.yoga-item strong {
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+.yoga-item p {
+  font-size: 0.82rem;
+  color: var(--ink-faded);
+  margin: 0;
+}
+
+/* ===== Current Dasha Summary ===== */
+#current-dasha-summary {
+  border-bottom: 1px solid rgba(196, 154, 44, 0.15);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+.curr-dasha-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+.curr-dasha-item {
+  text-align: center;
+  padding: 0.8rem;
+  background: var(--parchment-deep);
+  border: 1px solid rgba(196, 154, 44, 0.15);
+  border-radius: 4px;
+}
+.curr-dasha-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  margin-bottom: 0.3rem;
+}
+.curr-dasha-lord {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--gold-bright);
+  margin-bottom: 0.25rem;
+}
+.curr-dasha-dates {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+}
+
 /* Responsive - Tools */
 @media (max-width: 768px) {
   .tool-tabs { flex-direction: column; align-items: stretch; }
@@ -2034,6 +2289,9 @@ em { color: var(--gold-ink); }
   .dasha-item { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
   .dasha-bhukti { margin-left: 0.5rem; }
   .dasha-pratyantar { margin-left: 1rem; }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .panchang-grid { grid-template-columns: repeat(2, 1fr); }
+  .curr-dasha-grid { grid-template-columns: 1fr; }
 }
 
 /* ============================================

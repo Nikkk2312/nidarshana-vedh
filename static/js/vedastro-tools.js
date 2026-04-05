@@ -376,7 +376,7 @@ async function generateBirthChart(e){
     var dashaWait=localStorage.getItem('vedastro_api_key')?0:62000;
     setTimeout(function(){
       callAPI('DasaAtRange/'+ep+'/'+ep+'/'+locTimeStrYear(lt,endYr)+'/Levels/2/PrecisionHours/720')
-        .then(function(dashaData){renderDasha(dashaData);})
+        .then(function(dashaData){renderCurrentDashaSummary(dashaData);renderDasha(dashaData);})
         .catch(function(){document.getElementById('dasha-content').innerHTML='<p style="color:var(--ink-dim)">Dasha data unavailable. Try refreshing.</p>';});
     },dashaWait);
   }catch(err){
@@ -448,6 +448,14 @@ function renderKundali(data){
   var d9LagnaSign=SIGNS_ORDER[(startIdx+pada)%12];
   var karakaMap=computeKaraka(planetData);
 
+  // === COMPUTE PANCHANG ===
+  var lt=getLocTime('bc');
+  var panchang=computePanchang(planetData,lt);
+
+  // === RENDER SUMMARY & PANCHANG ===
+  renderSummaryCard(planetData,houses,panchang);
+  renderPanchang(panchang);
+
   // === RASHI CHART ===
   var rSigns=[],rPlanets=[],rDegs={};
   for(var i=0;i<12;i++){rSigns.push(houses[i].sign);rPlanets.push([]);}
@@ -468,18 +476,56 @@ function renderKundali(data){
   });
   drawChart('navamsa-chart',nSigns,nPlanets,nDegs);
 
+  // === CHANDRA KUNDALI (Moon chart) ===
+  var moonHouseIdx=-1;
+  planetData.forEach(function(p){if(p.name==='Moon')moonHouseIdx=parseInt(p.house.replace('House',''),10)-1;});
+  if(moonHouseIdx>=0){
+    var cSigns=[],cPlanets=[];
+    for(var i=0;i<12;i++){cSigns.push(houses[(moonHouseIdx+i)%12].sign);cPlanets.push([]);}
+    planetData.forEach(function(p){
+      var hIdx=parseInt(p.house.replace('House',''),10)-1;
+      var rel=(hIdx-moonHouseIdx+12)%12;
+      cPlanets[rel].push(p.name);
+    });
+    drawChart('chandra-chart',cSigns,cPlanets,rDegs);
+    setupChartHover('chandra-chart');
+  }
+
+  // === SURYA KUNDALI (Sun chart) ===
+  var sunHouseIdx=-1;
+  planetData.forEach(function(p){if(p.name==='Sun')sunHouseIdx=parseInt(p.house.replace('House',''),10)-1;});
+  if(sunHouseIdx>=0){
+    var sSigns=[],sPlanets=[];
+    for(var i=0;i<12;i++){sSigns.push(houses[(sunHouseIdx+i)%12].sign);sPlanets.push([]);}
+    planetData.forEach(function(p){
+      var hIdx=parseInt(p.house.replace('House',''),10)-1;
+      var rel=(hIdx-sunHouseIdx+12)%12;
+      sPlanets[rel].push(p.name);
+    });
+    drawChart('surya-chart',sSigns,sPlanets,rDegs);
+    setupChartHover('surya-chart');
+  }
+
   // === CHART HOVER ASPECTS ===
   setupChartHover('rashi-chart');
   setupChartHover('navamsa-chart');
 
-  // === PLANET TABLE ===
+  // === COMPUTE DOSHAS & YOGAS ===
+  var mangalDosha=computeMangalDosha(planetData,houses);
+  var kaalSarp=computeKaalSarpDosha(planetData);
+  var moonSign=panchang?panchang.moonSign:'';
+  var sadeSati=computeSadeSati(moonSign);
+  var yogas=computeYogas(planetData,houses);
+  renderYogaDosha(yogas,mangalDosha,kaalSarp,sadeSati);
+
+  // === PLANET TABLE (with Dignity column) ===
   var tbody=document.querySelector('#planets-table tbody');
   tbody.innerHTML='';
 
   // Ascendant row
   var ascNak=houses[0].nakshatra||'',ascNakName=ascNak,ascPada='';
   if(ascNak.indexOf(' - ')!==-1){var sp=ascNak.split(' - ');ascNakName=sp[0].trim();ascPada=sp[1].trim();}
-  tbody.innerHTML+='<tr><td><strong title="Ascendant — लग्न (Lagna)">Ascendant</strong></td><td></td><td></td><td>'+houses[0].sign+'</td><td>'+fmtDeg(ascDeg)+'</td><td>'+ascNakName+'</td><td>'+ascPada+'</td><td></td><td></td></tr>';
+  tbody.innerHTML+='<tr><td><strong title="Ascendant — लग्न (Lagna)">Ascendant</strong></td><td></td><td></td><td>'+houses[0].sign+'</td><td>'+fmtDeg(ascDeg)+'</td><td></td><td>'+ascNakName+'</td><td>'+ascPada+'</td><td></td><td></td></tr>';
 
   // Main planet rows
   planetData.forEach(function(p){
@@ -491,11 +537,13 @@ function renderKundali(data){
     var karaka=karakaMap[p.name]||'';
     var karakaTitle=KARAKA_FULL[karaka]||'';
     var hIdx=parseInt(p.house.replace('House',''),10)-1;
+    var dig=getDignity(p.name,p.sign,p.totalDeg);
+    var digHtml=dig.status?'<span class="'+dig.cls+'">'+dig.status+'</span>':'';
 
     var tr=document.createElement('tr');
     tr.setAttribute('data-planet',p.name);
     tr.setAttribute('data-house-idx',hIdx);
-    tr.innerHTML='<td><strong title="'+pTitle(p.name)+'">'+p.name+'</strong></td><td>'+cMark+'</td><td>'+rMark+'</td><td>'+p.sign+'</td><td>'+fmtDeg(p.degree)+'</td><td>'+nakName+'</td><td>'+pada+'</td><td>'+(karakaTitle||'')+'</td><td title="'+p.avastha+'">'+p.avastha+'</td>';
+    tr.innerHTML='<td><strong title="'+pTitle(p.name)+'">'+p.name+'</strong></td><td>'+cMark+'</td><td>'+rMark+'</td><td>'+p.sign+'</td><td>'+fmtDeg(p.degree)+'</td><td>'+digHtml+'</td><td>'+nakName+'</td><td>'+pada+'</td><td>'+(karakaTitle||'')+'</td><td title="'+p.avastha+'">'+p.avastha+'</td>';
     tbody.appendChild(tr);
   });
 
@@ -522,6 +570,330 @@ function computeKaraka(planets){
   items.sort(function(a,b){return b.deg-a.deg;});
   var map={};items.forEach(function(it,i){if(i<KARAKA_NAMES.length)map[it.name]=KARAKA_NAMES[i];});
   return map;
+}
+
+
+// ===== DIGNITY & FRIENDSHIP =====
+var DIGNITY_DATA={
+  Sun:{ex:'Aries',exDeg:10,db:'Libra',own:['Leo'],mt:'Leo',mtS:0,mtE:20},
+  Moon:{ex:'Taurus',exDeg:3,db:'Scorpio',own:['Cancer'],mt:'Taurus',mtS:4,mtE:30},
+  Mars:{ex:'Capricorn',exDeg:28,db:'Cancer',own:['Aries','Scorpio'],mt:'Aries',mtS:0,mtE:12},
+  Mercury:{ex:'Virgo',exDeg:15,db:'Pisces',own:['Gemini','Virgo'],mt:'Virgo',mtS:16,mtE:20},
+  Jupiter:{ex:'Cancer',exDeg:5,db:'Capricorn',own:['Sagittarius','Pisces'],mt:'Sagittarius',mtS:0,mtE:10},
+  Venus:{ex:'Pisces',exDeg:27,db:'Virgo',own:['Taurus','Libra'],mt:'Libra',mtS:0,mtE:15},
+  Saturn:{ex:'Libra',exDeg:20,db:'Aries',own:['Capricorn','Aquarius'],mt:'Aquarius',mtS:0,mtE:20},
+  Rahu:{ex:'Taurus',db:'Scorpio',own:['Aquarius'],mt:null},
+  Ketu:{ex:'Scorpio',db:'Taurus',own:['Scorpio'],mt:null}
+};
+var NAT_FRIENDS={
+  Sun:{f:['Moon','Mars','Jupiter'],e:['Venus','Saturn'],n:['Mercury']},
+  Moon:{f:['Sun','Mercury'],e:[],n:['Mars','Jupiter','Venus','Saturn']},
+  Mars:{f:['Sun','Moon','Jupiter'],e:['Mercury'],n:['Venus','Saturn']},
+  Mercury:{f:['Sun','Venus'],e:['Moon'],n:['Mars','Jupiter','Saturn']},
+  Jupiter:{f:['Sun','Moon','Mars'],e:['Mercury','Venus'],n:['Saturn']},
+  Venus:{f:['Mercury','Saturn'],e:['Sun','Moon'],n:['Mars','Jupiter']},
+  Saturn:{f:['Mercury','Venus'],e:['Sun','Moon','Mars'],n:['Jupiter']},
+  Rahu:{f:['Mercury','Venus','Saturn'],e:['Sun','Moon','Mars'],n:['Jupiter']},
+  Ketu:{f:['Mars','Jupiter'],e:['Mercury','Venus'],n:['Sun','Moon','Saturn']}
+};
+function getDignity(planet,sign,deg){
+  var d=DIGNITY_DATA[planet];if(!d)return{status:'',cls:''};
+  if(sign===d.ex)return{status:'Exalted',cls:'dignity-exalted'};
+  if(sign===d.db)return{status:'Debilitated',cls:'dignity-debilitated'};
+  if(d.mt&&sign===d.mt){var inM=true;if(d.mtS!==undefined&&deg<d.mtS)inM=false;if(d.mtE!==undefined&&deg>d.mtE)inM=false;if(inM)return{status:'Moolatrikona',cls:'dignity-moola'};}
+  if(d.own&&d.own.indexOf(sign)!==-1)return{status:'Own Sign',cls:'dignity-own'};
+  var lord=SIGN_RULER[sign];if(!lord||!NAT_FRIENDS[planet])return{status:'',cls:''};
+  var nf=NAT_FRIENDS[planet];
+  if(nf.f.indexOf(lord)!==-1)return{status:"Friend's Sign",cls:'dignity-friend'};
+  if(nf.e.indexOf(lord)!==-1)return{status:"Enemy's Sign",cls:'dignity-enemy'};
+  return{status:'Neutral',cls:'dignity-neutral'};
+}
+function getSidLong(sign,deg){var idx=SIGNS_ORDER.indexOf(sign);return idx>=0?idx*30+(parseFloat(deg)||0):0;}
+
+
+// ===== PANCHANG =====
+var TITHI_NAMES=['Shukla Pratipada','Shukla Dwitiya','Shukla Tritiya','Shukla Chaturthi','Shukla Panchami','Shukla Shashthi','Shukla Saptami','Shukla Ashtami','Shukla Navami','Shukla Dashami','Shukla Ekadashi','Shukla Dwadashi','Shukla Trayodashi','Shukla Chaturdashi','Purnima','Krishna Pratipada','Krishna Dwitiya','Krishna Tritiya','Krishna Chaturthi','Krishna Panchami','Krishna Shashthi','Krishna Saptami','Krishna Ashtami','Krishna Navami','Krishna Dashami','Krishna Ekadashi','Krishna Dwadashi','Krishna Trayodashi','Krishna Chaturdashi','Amavasya'];
+var YOGA_27=['Vishkambha','Priti','Ayushman','Saubhagya','Shobhana','Atiganda','Sukarma','Dhriti','Shoola','Ganda','Vriddhi','Dhruva','Vyaghata','Harshana','Vajra','Siddhi','Vyatipata','Variyan','Parigha','Shiva','Siddha','Sadhya','Shubha','Shukla','Brahma','Indra','Vaidhriti'];
+var KARANA_MOV=['Bava','Balava','Kaulava','Taitila','Gara','Vanija','Vishti'];
+var VARA_DATA=[{n:'Sunday',l:'Sun',h:'रविवार'},{n:'Monday',l:'Moon',h:'सोमवार'},{n:'Tuesday',l:'Mars',h:'मंगलवार'},{n:'Wednesday',l:'Mercury',h:'बुधवार'},{n:'Thursday',l:'Jupiter',h:'गुरुवार'},{n:'Friday',l:'Venus',h:'शुक्रवार'},{n:'Saturday',l:'Saturn',h:'शनिवार'}];
+
+function computePanchang(planetData,lt){
+  var sunP=null,moonP=null;
+  planetData.forEach(function(p){if(p.name==='Sun')sunP=p;if(p.name==='Moon')moonP=p;});
+  if(!sunP||!moonP)return null;
+  var sunL=getSidLong(sunP.sign,sunP.totalDeg),moonL=getSidLong(moonP.sign,moonP.totalDeg);
+  // Tithi
+  var tA=(moonL-sunL+360)%360;
+  var tIdx=Math.floor(tA/12);if(tIdx>29)tIdx=29;
+  // Yoga
+  var yA=(sunL+moonL)%360;
+  var yIdx=Math.floor(yA/(800/60));if(yIdx>26)yIdx=26;
+  // Karana
+  var kIdx=Math.floor(tA/6);if(kIdx>59)kIdx=59;
+  var karana;
+  if(kIdx===0)karana='Kimstughna';
+  else if(kIdx>=57)karana=['Shakuni','Chatushpada','Naga'][kIdx-57];
+  else karana=KARANA_MOV[(kIdx-1)%7];
+  // Vara
+  var dt=new Date(parseInt(lt.year),parseInt(lt.month)-1,parseInt(lt.day));
+  var vara=VARA_DATA[dt.getDay()];
+  // Birth Nakshatra
+  var bNak=moonP.nakshatra||'',bNakName=bNak,bPada='';
+  if(bNak.indexOf(' - ')!==-1){var sp=bNak.split(' - ');bNakName=sp[0].trim();bPada=sp[1].trim();}
+  return{tithi:TITHI_NAMES[tIdx],paksha:tIdx<15?'Shukla':'Krishna',yoga:YOGA_27[yIdx],karana:karana,vara:vara.n,varaHi:vara.h,varaLord:vara.l,birthNak:bNakName,birthPada:bPada,moonSign:moonP.sign,sunSign:sunP.sign};
+}
+
+
+// ===== MANGAL DOSHA =====
+function computeMangalDosha(planetData,houses){
+  var mars=null,jup=null;
+  planetData.forEach(function(p){if(p.name==='Mars')mars=p;if(p.name==='Jupiter')jup=p;});
+  if(!mars)return{present:false};
+  var mH=parseInt(mars.house.replace('House',''),10);
+  var doshaH=[1,2,4,7,8,12];
+  if(doshaH.indexOf(mH)===-1)return{present:false,house:mH,sign:mars.sign};
+  var cancels=[];
+  var mDig=getDignity('Mars',mars.sign,mars.totalDeg);
+  if(mDig.status==='Exalted'||mDig.status==='Own Sign'||mDig.status==='Moolatrikona')cancels.push('Mars is '+mDig.status+' in '+mars.sign);
+  if(jup){
+    var jH=parseInt(jup.house.replace('House',''),10);
+    if(jH===mH)cancels.push('Mars conjunct Jupiter');
+    var jAsp=[(jH+4)%12||12,(jH+6)%12||12,(jH+8)%12||12];
+    if(jAsp.indexOf(mH)!==-1)cancels.push('Mars aspected by Jupiter');
+  }
+  if(mH===2&&(mars.sign==='Gemini'||mars.sign==='Virgo'))cancels.push('Mars in 2nd in Mercury\'s sign');
+  if(mH===12&&(mars.sign==='Taurus'||mars.sign==='Libra'))cancels.push('Mars in 12th in Venus\'s sign');
+  if(mH===1&&(mars.sign==='Aries'||mars.sign==='Leo'||mars.sign==='Aquarius'))cancels.push('Mars in Lagna in '+mars.sign);
+  if(mH===8&&(mars.sign==='Pisces'||mars.sign==='Aquarius'))cancels.push('Mars in 8th in '+mars.sign);
+  var beneficLagna=false;
+  planetData.forEach(function(p){if((p.name==='Venus'||p.name==='Jupiter')&&p.house==='House1')beneficLagna=true;});
+  if(beneficLagna)cancels.push('Benefic in Lagna weakens dosha');
+  return{present:true,cancelled:cancels.length>0,house:mH,sign:mars.sign,cancellations:cancels};
+}
+
+
+// ===== KAAL SARP DOSHA =====
+function computeKaalSarpDosha(planetData){
+  var rahuL=0,ketuL=0,others=[];
+  planetData.forEach(function(p){
+    var lng=getSidLong(p.sign,p.totalDeg);
+    if(p.name==='Rahu')rahuL=lng;else if(p.name==='Ketu')ketuL=lng;else others.push({name:p.name,lng:lng});
+  });
+  var arc1=0,arc2=0,rkArc=(ketuL-rahuL+360)%360;
+  others.forEach(function(p){var fr=(p.lng-rahuL+360)%360;if(fr<=rkArc)arc1++;else arc2++;});
+  var dir='';
+  if(arc1===7)dir='Rahu to Ketu';else if(arc2===7)dir='Ketu to Rahu';else return{present:false};
+  var rahuH=0;
+  planetData.forEach(function(p){if(p.name==='Rahu')rahuH=parseInt(p.house.replace('House',''),10);});
+  var types={1:'Anant',2:'Kulik',3:'Vasuki',4:'Shankhpal',5:'Padma',6:'Mahapadma',7:'Takshak',8:'Karkotak',9:'Shankhachur',10:'Ghatak',11:'Vishdhar',12:'Sheshnag'};
+  return{present:true,type:types[rahuH]||'',rahuHouse:rahuH,direction:dir};
+}
+
+
+// ===== SADE SATI =====
+function computeSadeSati(moonSign){
+  // Check current Saturn position using TransitCalc if available
+  if(typeof TransitCalc==='undefined')return{active:false,available:false};
+  try{
+    var td=TransitCalc.compute();
+    var satSign=td.positions.Saturn.signEn;
+    var moonIdx=SIGNS_ORDER.indexOf(moonSign);
+    var satIdx=SIGNS_ORDER.indexOf(satSign);
+    if(moonIdx<0||satIdx<0)return{active:false,available:true};
+    var diff=(satIdx-moonIdx+12)%12;
+    if(diff===11)return{active:true,available:true,phase:'Rising (1st phase)',satSign:satSign};
+    if(diff===0)return{active:true,available:true,phase:'Peak (2nd phase)',satSign:satSign};
+    if(diff===1)return{active:true,available:true,phase:'Setting (3rd phase)',satSign:satSign};
+    return{active:false,available:true,satSign:satSign};
+  }catch(e){return{active:false,available:false};}
+}
+
+
+// ===== YOGA DETECTION =====
+function computeYogas(planetData,houses){
+  var yogas=[];
+  var pH={},pS={},pD={};
+  planetData.forEach(function(p){
+    var hIdx=parseInt(p.house.replace('House',''),10);
+    pH[p.name]=hIdx;pS[p.name]=p.sign;pD[p.name]=getDignity(p.name,p.sign,p.totalDeg);
+  });
+  function hLord(n){return houses[n-1]?SIGN_RULER[houses[n-1].sign]||'':'';}
+  function conj(a,b){return pH[a]===pH[b];}
+  function inKendra(h,ref){var d=((h-ref)+12)%12;return d===0||d===3||d===6||d===9;}
+
+  // Gajakesari
+  if(inKendra(pH['Jupiter'],pH['Moon']))yogas.push({name:'Gajakesari Yoga',type:'benefic',desc:'Jupiter in kendra from Moon — wisdom, fame, prosperity. The native commands respect and achieves lasting success.'});
+
+  // Budhaditya
+  if(conj('Sun','Mercury'))yogas.push({name:'Budhaditya Yoga',type:'benefic',desc:'Sun-Mercury conjunction — intelligence, eloquence, analytical skills, strong communication.'});
+
+  // Chandra-Mangal
+  if(conj('Moon','Mars'))yogas.push({name:'Chandra-Mangal Yoga',type:'benefic',desc:'Moon-Mars conjunction — earning capacity, wealth through own efforts, business acumen.'});
+
+  // Pancha Mahapurusha
+  [{p:'Mars',y:'Ruchaka',d:'Courage, leadership, commanding personality, success in competition.'},{p:'Mercury',y:'Bhadra',d:'Sharp intellect, business acumen, excellent communication and learning.'},{p:'Jupiter',y:'Hamsa',d:'Spiritual wisdom, righteousness, respected teacher, blessed life.'},{p:'Venus',y:'Malavya',d:'Beauty, luxury, artistic talent, comfortable life, strong relationships.'},{p:'Saturn',y:'Shasha',d:'Authority, discipline, political power, longevity and leadership.'}].forEach(function(m){
+    var dig=pD[m.p];
+    if(inKendra(pH[m.p],1)&&(dig.status==='Exalted'||dig.status==='Own Sign'||dig.status==='Moolatrikona'))
+      yogas.push({name:m.y+' Yoga',type:'benefic',desc:m.p+' in own/exalted sign in kendra — '+m.d});
+  });
+
+  // Raj Yoga: trikona lord (5,9) conjunct kendra lord (4,7,10)
+  [5,9].forEach(function(t){var tl=hLord(t);if(!tl)return;[4,7,10].forEach(function(k){var kl=hLord(k);if(!kl||tl===kl)return;if(conj(tl,kl))yogas.push({name:'Raj Yoga',type:'benefic',desc:tl+' (lord of '+t+'th) conjunct '+kl+' (lord of '+k+'th) — authority, power, rise in status.'});});});
+
+  // Dhana Yoga: lord of 2/11 conjunct lord of 1/5/9
+  [2,11].forEach(function(d){var dl=hLord(d);if(!dl)return;[1,5,9].forEach(function(t){var tl=hLord(t);if(!tl||dl===tl)return;if(conj(dl,tl))yogas.push({name:'Dhana Yoga',type:'benefic',desc:dl+' (lord of '+d+') conjunct '+tl+' (lord of '+t+') — wealth accumulation, financial prosperity.'});});});
+
+  // Viparita Raja Yoga: lord of 6/8/12 in another dusthana
+  [{h:6},{h:8},{h:12}].forEach(function(x){var dl=hLord(x.h);if(!dl)return;var dlH=pH[dl];if([6,8,12].indexOf(dlH)!==-1&&dlH!==x.h)yogas.push({name:'Viparita Raja Yoga',type:'benefic',desc:'Lord of '+x.h+'th in '+dlH+'th house — unexpected gains through adversity.'});});
+
+  // Neechabhanga Raja Yoga
+  planetData.forEach(function(p){
+    if(pD[p.name].status!=='Debilitated')return;
+    var debLord=SIGN_RULER[p.sign];
+    if(debLord&&(inKendra(pH[debLord],1)||inKendra(pH[debLord],pH['Moon'])))
+      yogas.push({name:'Neechabhanga Raja Yoga',type:'benefic',desc:p.name+' debilitated but sign lord '+debLord+' in kendra — weakness transformed into great strength.'});
+  });
+
+  // Amala Yoga: natural benefic in 10th
+  planetData.forEach(function(p){if(pH[p.name]===10&&['Jupiter','Venus','Mercury'].indexOf(p.name)!==-1)yogas.push({name:'Amala Yoga',type:'benefic',desc:p.name+' in 10th house — pure character, ethical career, good reputation.'});});
+
+  // Saraswati Yoga: Jupiter, Venus, Mercury in kendra/trikona + Jupiter in own/exalted/friend
+  var jvmInGood=['Jupiter','Venus','Mercury'].every(function(p){var h=pH[p];return inKendra(h,1)||[5,9].indexOf(((h-1+12)%12)+1)!==-1;});
+  if(jvmInGood&&(pD['Jupiter'].status==='Exalted'||pD['Jupiter'].status==='Own Sign'||pD['Jupiter'].status==="Friend's Sign"))
+    yogas.push({name:'Saraswati Yoga',type:'benefic',desc:'Jupiter, Venus, Mercury well-placed — exceptional learning, wisdom, mastery of arts and sciences.'});
+
+  // Lakshmi Yoga: lord of 9th in own/exalted sign in kendra/trikona
+  var l9=hLord(9);
+  if(l9){var l9d=pD[l9];var l9h=pH[l9];var l9good=inKendra(l9h,1)||[1,5,9].indexOf(l9h)!==-1;
+    if(l9good&&(l9d.status==='Exalted'||l9d.status==='Own Sign'))yogas.push({name:'Lakshmi Yoga',type:'benefic',desc:'9th lord '+l9+' in strength — wealth, fortune, prosperity, divine blessings.'});}
+
+  // Kemadruma Yoga (challenging)
+  var mH=pH['Moon'],h2m=(mH%12)+1,h12m=((mH-2+12)%12)+1;
+  var adj=planetData.filter(function(p){return p.name!=='Moon'&&p.name!=='Rahu'&&p.name!=='Ketu'&&(pH[p.name]===h2m||pH[p.name]===h12m);});
+  if(adj.length===0){
+    var kendM=planetData.filter(function(p){return p.name!=='Moon'&&p.name!=='Rahu'&&p.name!=='Ketu'&&inKendra(pH[p.name],mH);});
+    if(kendM.length===0)yogas.push({name:'Kemadruma Yoga',type:'challenging',desc:'No planets adjacent to Moon or in kendra from Moon — periods of loneliness or financial difficulty.'});
+  }
+
+  // Daridra Yoga: lord of 11th in 6/8/12
+  var l11=hLord(11);if(l11&&[6,8,12].indexOf(pH[l11])!==-1)yogas.push({name:'Daridra Yoga',type:'challenging',desc:'11th lord in dusthana — obstacles in income, gains come with difficulty.'});
+
+  // Grahan Yoga: Sun/Moon with Rahu/Ketu
+  if(conj('Sun','Rahu')||conj('Sun','Ketu'))yogas.push({name:'Grahan Yoga (Solar)',type:'challenging',desc:'Sun with Rahu/Ketu — challenges with authority, father, or self-confidence. Spiritual growth through ego dissolution.'});
+  if(conj('Moon','Rahu')||conj('Moon','Ketu'))yogas.push({name:'Grahan Yoga (Lunar)',type:'challenging',desc:'Moon with Rahu/Ketu — emotional turbulence, psychic sensitivity. Strong intuition but mental restlessness.'});
+
+  // Deduplicate
+  var seen={};yogas=yogas.filter(function(y){if(seen[y.name])return false;seen[y.name]=true;return true;});
+  return yogas;
+}
+
+
+// ===== RENDER: SUMMARY CARD =====
+function renderSummaryCard(planetData,houses,panchang){
+  var el=document.getElementById('summary-card');if(!el)return;
+  var ascSign=houses[0]?houses[0].sign:'';
+  var moonSign=panchang?panchang.moonSign:'';
+  var sunSign=panchang?panchang.sunSign:'';
+  var birthNak=panchang?panchang.birthNak:'';
+  var birthPada=panchang?panchang.birthPada:'';
+  el.innerHTML='<div class="summary-grid">'+
+    '<div class="summary-item"><span class="summary-label">Ascendant (Lagna)</span><span class="summary-value">'+ascSign+'</span></div>'+
+    '<div class="summary-item"><span class="summary-label">Moon Sign (Rashi)</span><span class="summary-value">'+moonSign+'</span></div>'+
+    '<div class="summary-item"><span class="summary-label">Sun Sign</span><span class="summary-value">'+sunSign+'</span></div>'+
+    '<div class="summary-item"><span class="summary-label">Birth Star (Nakshatra)</span><span class="summary-value">'+birthNak+(birthPada?' — '+birthPada:'')+'</span></div>'+
+  '</div>';
+}
+
+
+// ===== RENDER: PANCHANG =====
+function renderPanchang(panchang){
+  var el=document.getElementById('panchang-card');if(!el||!panchang)return;
+  el.innerHTML='<div class="panchang-grid">'+
+    '<div class="panchang-item"><span class="panchang-label">Tithi</span><span class="panchang-value">'+panchang.tithi+'</span></div>'+
+    '<div class="panchang-item"><span class="panchang-label">Nakshatra</span><span class="panchang-value">'+panchang.birthNak+(panchang.birthPada?' ('+panchang.birthPada+')':'')+'</span></div>'+
+    '<div class="panchang-item"><span class="panchang-label">Yoga</span><span class="panchang-value">'+panchang.yoga+'</span></div>'+
+    '<div class="panchang-item"><span class="panchang-label">Karana</span><span class="panchang-value">'+panchang.karana+'</span></div>'+
+    '<div class="panchang-item"><span class="panchang-label">Vara (Day)</span><span class="panchang-value">'+panchang.vara+' <span style="font-family:var(--font-hindi);font-size:0.8em;color:var(--ink-dim)">('+panchang.varaHi+')</span></span></div>'+
+    '<div class="panchang-item"><span class="panchang-label">Paksha</span><span class="panchang-value">'+panchang.paksha+' Paksha</span></div>'+
+  '</div>';
+}
+
+
+// ===== RENDER: YOGAS & DOSHAS =====
+function renderYogaDosha(yogas,mangalDosha,kaalSarp,sadeSati){
+  var el=document.getElementById('yoga-dosha-card');if(!el)return;
+  var html='';
+
+  // Doshas section
+  html+='<div class="yd-section"><h4 class="yd-heading">Doshas</h4>';
+  // Mangal Dosha
+  if(mangalDosha.present){
+    html+='<div class="dosha-item dosha-'+(mangalDosha.cancelled?'partial':'active')+'"><div class="dosha-header"><span class="dosha-icon">'+(mangalDosha.cancelled?'⚠':'✕')+'</span><strong>Mangal Dosha (Kuja Dosha)</strong><span class="dosha-badge '+(mangalDosha.cancelled?'badge-partial':'badge-active')+'">'+(mangalDosha.cancelled?'Cancelled/Weakened':'Active')+'</span></div>';
+    html+='<p class="dosha-desc">Mars in '+mangalDosha.house+getSuffix(mangalDosha.house)+' house ('+mangalDosha.sign+') — affects marriage and partnerships.</p>';
+    if(mangalDosha.cancellations&&mangalDosha.cancellations.length){html+='<ul class="dosha-cancels">';mangalDosha.cancellations.forEach(function(c){html+='<li>'+c+'</li>';});html+='</ul>';}
+    html+='</div>';
+  }else{
+    html+='<div class="dosha-item dosha-absent"><div class="dosha-header"><span class="dosha-icon">✓</span><strong>Mangal Dosha</strong><span class="dosha-badge badge-absent">Not Present</span></div><p class="dosha-desc">Mars in '+mangalDosha.house+getSuffix(mangalDosha.house)+' house — no Mangal Dosha.</p></div>';
+  }
+  // Kaal Sarp Dosha
+  if(kaalSarp.present){
+    html+='<div class="dosha-item dosha-active"><div class="dosha-header"><span class="dosha-icon">✕</span><strong>Kaal Sarp Dosha — '+kaalSarp.type+'</strong><span class="dosha-badge badge-active">Present</span></div>';
+    html+='<p class="dosha-desc">All planets hemmed between Rahu (House '+kaalSarp.rahuHouse+') and Ketu ('+kaalSarp.direction+') — karmic axis dominates. Remedies recommended.</p></div>';
+  }else{
+    html+='<div class="dosha-item dosha-absent"><div class="dosha-header"><span class="dosha-icon">✓</span><strong>Kaal Sarp Dosha</strong><span class="dosha-badge badge-absent">Not Present</span></div><p class="dosha-desc">Planets are distributed on both sides of the Rahu-Ketu axis.</p></div>';
+  }
+  // Sade Sati
+  if(sadeSati&&sadeSati.available){
+    if(sadeSati.active){
+      html+='<div class="dosha-item dosha-active"><div class="dosha-header"><span class="dosha-icon">⚠</span><strong>Sade Sati</strong><span class="dosha-badge badge-active">'+sadeSati.phase+'</span></div>';
+      html+='<p class="dosha-desc">Saturn currently transiting '+sadeSati.satSign+' — the 7.5-year Saturn transit over your natal Moon is active.</p></div>';
+    }else{
+      html+='<div class="dosha-item dosha-absent"><div class="dosha-header"><span class="dosha-icon">✓</span><strong>Sade Sati</strong><span class="dosha-badge badge-absent">Not Active</span></div><p class="dosha-desc">Saturn currently in '+sadeSati.satSign+' — not transiting over your Moon sign.</p></div>';
+    }
+  }
+  html+='</div>';
+
+  // Yogas section
+  html+='<div class="yd-section"><h4 class="yd-heading">Yogas Detected</h4>';
+  if(yogas.length===0){html+='<p style="color:var(--ink-dim)">No major yogas detected in this chart.</p>';}
+  else{
+    var benefic=yogas.filter(function(y){return y.type==='benefic';});
+    var challenging=yogas.filter(function(y){return y.type==='challenging';});
+    if(benefic.length){html+='<div class="yoga-group"><h5 class="yoga-group-title" style="color:var(--patina)">Beneficial Yogas ('+benefic.length+')</h5>';benefic.forEach(function(y){html+='<div class="yoga-item yoga-benefic"><strong>'+y.name+'</strong><p>'+y.desc+'</p></div>';});html+='</div>';}
+    if(challenging.length){html+='<div class="yoga-group"><h5 class="yoga-group-title" style="color:var(--vermillion)">Challenging Yogas ('+challenging.length+')</h5>';challenging.forEach(function(y){html+='<div class="yoga-item yoga-challenging"><strong>'+y.name+'</strong><p>'+y.desc+'</p></div>';});html+='</div>';}
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+function getSuffix(n){if(n===1)return'st';if(n===2)return'nd';if(n===3)return'rd';return'th';}
+
+
+// ===== RENDER: CURRENT DASHA SUMMARY =====
+function renderCurrentDashaSummary(data){
+  var el=document.getElementById('current-dasha-summary');if(!el)return;
+  if(!data){el.style.display='none';return;}
+  var raw=data.DasaAtRange||data.DasaForNow||data;
+  if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch(e){}}
+  if(!raw||typeof raw!=='object'||Array.isArray(raw)){el.style.display='none';return;}
+  var now=new Date();
+  var currMaha=null,currAntar=null;
+  for(var k in raw){
+    var d=raw[k];if(!d||typeof d!=='object')continue;
+    if(isPeriodCurrent(d,now)){
+      currMaha=d;
+      if(d.SubDasas){for(var sk in d.SubDasas){var s=d.SubDasas[sk];if(s&&typeof s==='object'&&isPeriodCurrent(s,now)){currAntar=s;break;}}}
+      break;
+    }
+  }
+  if(!currMaha){el.style.display='none';return;}
+  el.style.display='block';
+  var html='<div class="curr-dasha-grid">';
+  html+='<div class="curr-dasha-item"><span class="curr-dasha-label">Mahadasha</span><strong class="curr-dasha-lord" title="'+pTitle(currMaha.Lord||'')+'">'+currMaha.Lord+'</strong><span class="curr-dasha-dates">'+fmtDasaDate(currMaha.Start)+' — '+fmtDasaDate(currMaha.End)+'</span></div>';
+  if(currAntar){
+    html+='<div class="curr-dasha-item"><span class="curr-dasha-label">Antardasha</span><strong class="curr-dasha-lord" title="'+pTitle(currAntar.Lord||'')+'">'+currAntar.Lord+'</strong><span class="curr-dasha-dates">'+fmtDasaDate(currAntar.Start)+' — '+fmtDasaDate(currAntar.End)+'</span></div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
 }
 
 

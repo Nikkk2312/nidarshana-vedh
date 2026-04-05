@@ -22,11 +22,13 @@
         <p style="color: var(--ink-faded); max-width: 600px; margin: 0 auto 2rem;">Powered by <strong>VedAstro</strong>, an open-source Vedic astronomy engine used by astrologers worldwide for precise calculations.</p>
         <div class="pillar-card" style="max-width: 500px; margin: 2rem auto;">
           <h3 style="margin-bottom: 1rem;">What you get:</h3>
-          <p>◉ Complete Kundali Generator (Rashi, Navamsa, all divisional charts)</p>
-          <p>◉ Planetary positions with degrees, signs, Nakshatras, and houses</p>
-          <p>◉ Vimshottari Dasha timeline with current period highlighted</p>
+          <p>◉ Complete Kundali — Lagna (D1), Navamsa (D9), Chandra & Surya charts</p>
+          <p>◉ Planetary positions with degrees, dignity, Nakshatras, Karaka & Avastha</p>
+          <p>◉ Panchang at birth — Tithi, Yoga, Karana, Vara, Nakshatra</p>
+          <p>◉ Yoga detection — Raj Yoga, Gajakesari, Pancha Mahapurusha & more</p>
+          <p>◉ Dosha analysis — Mangal Dosha, Kaal Sarp Dosha, Sade Sati check</p>
+          <p>◉ Vimshottari Dasha with current Mahadasha & Antardasha highlighted</p>
           <p>◉ Ashtakoota Matchmaking with Guna Milan score and detailed breakdown</p>
-          <p>◉ Mangal Dosha assessment with cancellation Yoga check</p>
         </div>
       </div>
     </div>
@@ -184,25 +186,49 @@
     <section class="section" style="padding-top: 0;">
       <div class="container">
 
-        <!-- Charts Row (compact) -->
+        <!-- Summary Card -->
+        <div class="result-card compact-card" id="summary-card-wrap">
+          <h3>Chart Summary</h3>
+          <div id="summary-card"></div>
+        </div>
+
+        <!-- Panchang Card -->
+        <div class="result-card compact-card" id="panchang-card-wrap">
+          <h3>Panchang at Birth</h3>
+          <div id="panchang-card"></div>
+        </div>
+
+        <!-- Charts Row: Lagna + Navamsa -->
         <div class="kundali-charts-row">
           <div class="kundali-chart-block">
-            <div class="kundali-chart-label">Lagna Chart</div>
+            <div class="kundali-chart-label">Lagna Chart (D1)</div>
             <div class="kundali-chart-box" id="rashi-chart"></div>
           </div>
           <div class="kundali-chart-block">
-            <div class="kundali-chart-label">Navamsa Chart</div>
+            <div class="kundali-chart-label">Navamsa Chart (D9)</div>
             <div class="kundali-chart-box" id="navamsa-chart"></div>
           </div>
         </div>
 
-        <!-- Planet Table (full width) -->
+        <!-- Charts Row: Chandra + Surya -->
+        <div class="kundali-charts-row">
+          <div class="kundali-chart-block">
+            <div class="kundali-chart-label">Chandra Kundali (Moon Chart)</div>
+            <div class="kundali-chart-box" id="chandra-chart"></div>
+          </div>
+          <div class="kundali-chart-block">
+            <div class="kundali-chart-label">Surya Kundali (Sun Chart)</div>
+            <div class="kundali-chart-box" id="surya-chart"></div>
+          </div>
+        </div>
+
+        <!-- Planet Table (with Dignity column) -->
         <div class="result-card compact-card">
           <h3>Planetary Positions</h3>
           <div class="result-table-wrap">
             <table class="result-table compact-table" id="planets-table">
               <thead><tr>
-                <th>Planet</th><th>C</th><th>R</th><th>Rashi</th><th>Longitude</th><th>Nakshatra</th><th>Pada</th><th>Karaka</th><th>Avastha</th>
+                <th>Planet</th><th>C</th><th>R</th><th>Rashi</th><th>Longitude</th><th>Dignity</th><th>Nakshatra</th><th>Pada</th><th>Karaka</th><th>Avastha</th>
               </tr></thead>
               <tbody></tbody>
             </table>
@@ -210,9 +236,16 @@
           <p class="table-note">[C] Combust &nbsp; [D] Direct &nbsp; [R] Retrograde</p>
         </div>
 
-        <!-- Vimshottari Dasha (full width, below planets) -->
+        <!-- Yogas & Doshas -->
+        <div class="result-card compact-card">
+          <h3>Yogas & Doshas</h3>
+          <div id="yoga-dosha-card"></div>
+        </div>
+
+        <!-- Vimshottari Dasha -->
         <div class="result-card compact-card">
           <h3>Vimshottari Dasha</h3>
+          <div id="current-dasha-summary" style="display:none;"></div>
           <div id="dasha-content"></div>
         </div>
 
