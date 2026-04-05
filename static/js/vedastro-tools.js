@@ -37,11 +37,6 @@ var PLANET_INFO = {
 // Upagrahas (sub-planets) - API names
 var UPAGRAHAS = ['Gulika','Maandi','Dhuma','Vyatipaata','Parivesha','Indrachaapa','Upaketu','Kaala','Mrityu','Arthaprahaara','Yamaghantaka'];
 
-// Nakshatras for local computation from longitude
-var NAKSHATRAS = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Moola','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishtha','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
-var COMBUST_DEG = {Moon:12,Mars:17,Mercury:14,Jupiter:11,Venus:10,Saturn:15};
-var COMBUST_RETRO = {Mercury:12,Venus:8};
-
 var SUP = {'0':'\u2070','1':'\u00B9','2':'\u00B2','3':'\u00B3','4':'\u2074','5':'\u2075','6':'\u2076','7':'\u2077','8':'\u2078','9':'\u2079'};
 function toSup(n){return String(n).split('').map(function(c){return SUP[c]||c;}).join('');}
 
@@ -66,34 +61,6 @@ function getAspectHouses(name,houseIdx){
   if(NO_ASPECT_UPAGRAHAS.indexOf(name)!==-1)return [];
   var offsets=ASPECT_OFFSETS[name]||[6];
   return offsets.map(function(o){return (houseIdx+o)%12;});
-}
-
-// ===== LOCAL COMPUTATION FROM LONGITUDES =====
-function signFromLong(lng){return SIGNS_ORDER[Math.floor(lng/30)%12];}
-function degInSign(lng){return lng%30;}
-function nakFromLong(lng){
-  var span=360/27,padaSpan=360/108;
-  var i=Math.floor(lng/span);if(i>26)i=26;if(i<0)i=0;
-  var p=Math.floor((lng%span)/padaSpan)+1;if(p>4)p=4;if(p<1)p=1;
-  return NAKSHATRAS[i]+' - Pada '+p;
-}
-function d9FromLong(lng){
-  var si=Math.floor(lng/30)%12;var d=lng%30;
-  var np=Math.floor(d/(30/9));if(np>8)np=8;
-  var mod=si%3;var start=si;
-  if(mod===1)start=(si+8)%12;else if(mod===2)start=(si+4)%12;
-  return SIGNS_ORDER[(start+np)%12];
-}
-function isLocalCombust(planet,pLong,sunLong,isRetro){
-  if(planet==='Sun'||planet==='Rahu'||planet==='Ketu')return false;
-  var deg=COMBUST_DEG[planet];if(!deg)return false;
-  if(isRetro&&COMBUST_RETRO[planet])deg=COMBUST_RETRO[planet];
-  var diff=Math.abs(pLong-sunLong);if(diff>180)diff=360-diff;
-  return diff<deg;
-}
-function fmtDMS(totalDeg){
-  var d=Math.floor(totalDeg),mf=(totalDeg-d)*60,m=Math.floor(mf),s=Math.floor((mf-m)*60);
-  return d+"° "+m+"' "+s;
 }
 
 
@@ -374,70 +341,27 @@ function setupChartHover(chartId){
 
 // ===== BIRTH CHART =====
 async function generateBirthChart(e){
-  e.preventDefault();hideError('bc-error');setLoading('bc-submit',true);showProgress('Calculating chart...');
+  e.preventDefault();hideError('bc-error');setLoading('bc-submit',true);showProgress('Preparing...');
   var name=document.getElementById('bc-name').value.trim();
   var lt=getLocTime('bc');
   var ep=locTimeStr(lt);
 
   try{
-    // Only 3 API calls (within 5/min free tier) — everything else computed locally
-    // Retry helper for transient failures
-    async function tryAPI(endpoint,retries){
-      for(var t=0;t<=retries;t++){
-        try{return await callAPI(endpoint);}catch(e){if(t===retries)throw e;await delay(1500);}
-      }
-    }
-    var results=await Promise.all([
-      tryAPI('PlanetNirayanaLongitude/PlanetName/All/'+ep,1),
-      tryAPI('HouseRasiSign/HouseName/House1/'+ep,1),
-      callAPI('IsPlanetRetrograde/PlanetName/All/'+ep).catch(function(){return null;})
-    ]);
-    var longs=results[0],ascData=results[1],retroData=results[2];
+    // 10 core API calls (no upagrahas — saves 44 calls, avoids rate limits)
+    var endpoints=[
+      {key:'d1',ep:'PlanetRasiD1Sign/PlanetName/All/'+ep},
+      {key:'nak',ep:'PlanetConstellation/PlanetName/All/'+ep},
+      {key:'house',ep:'HousePlanetOccupiesBasedOnSign/PlanetName/All/'+ep},
+      {key:'d9',ep:'PlanetNavamshaD9Sign/PlanetName/All/'+ep},
+      {key:'retro',ep:'IsPlanetRetrograde/PlanetName/All/'+ep},
+      {key:'combust',ep:'IsPlanetCombust/PlanetName/All/'+ep},
+      {key:'avasta',ep:'PlanetAvasta/PlanetName/All/'+ep},
+      {key:'hSign',ep:'HouseSignName/HouseName/All/'+ep},
+      {key:'hNak',ep:'HouseConstellation/HouseName/All/'+ep},
+      {key:'ascDeg',ep:'HouseRasiSign/HouseName/House1/'+ep}
+    ];
 
-    // Parse planet longitudes
-    var longArr=(longs&&longs.PlanetNirayanaLongitude)||[];
-    var planetLongs={};
-    longArr.forEach(function(item){PLANETS.forEach(function(p){if(item[p])planetLongs[p]=parseFloat(item[p].TotalDegrees)||0;});});
-    var sunLong=planetLongs.Sun||0;
-
-    // Parse ascendant
-    var ascSign=ascData.HouseRasiSign.Name;
-    var ascSIdx=SIGNS_ORDER.indexOf(ascSign);
-    var ascTotalDeg=parseFloat(ascData.HouseRasiSign.DegreesIn.TotalDegrees)||0;
-
-    // Parse retrograde data
-    var retroArr=(retroData&&retroData.IsPlanetRetrograde)||[];
-
-    // Build data structures locally (same format as old API calls)
-    var d1Arr=[],nakArr2=[],houseArr2=[],d9Arr2=[],combustArr2=[],avastaArr2=[];
-    PLANETS.forEach(function(p){
-      var lng=planetLongs[p];if(lng===undefined)return;
-      var sign=signFromLong(lng),dInS=degInSign(lng);
-      var o={};o[p]={Name:sign,DegreesIn:{DegreeMinuteSecond:fmtDMS(dInS),TotalDegrees:dInS}};d1Arr.push(o);
-      var n={};n[p]=nakFromLong(lng);nakArr2.push(n);
-      var pSIdx=Math.floor(lng/30)%12,hNum=(pSIdx-ascSIdx+12)%12+1;
-      var h={};h[p]='House'+hNum;houseArr2.push(h);
-      var dv={};dv[p]={Name:d9FromLong(lng),DegreesIn:{TotalDegrees:0}};d9Arr2.push(dv);
-      var isR=(pick(retroArr,p)==='True');
-      var c={};c[p]=isLocalCombust(p,lng,sunLong,isR)?'True':'False';combustArr2.push(c);
-      var a={};a[p]='';avastaArr2.push(a);
-    });
-
-    // Build house signs & nakshatras (whole-sign system)
-    var hSignArr2=[],hNakArr2=[];
-    for(var i=0;i<12;i++){
-      var hSign=SIGNS_ORDER[(ascSIdx+i)%12];
-      var hs={};hs['House'+(i+1)]={Name:hSign};hSignArr2.push(hs);
-      var hn={};hn['House'+(i+1)]=nakFromLong(((ascSIdx+i)%12)*30);hNakArr2.push(hn);
-    }
-
-    var data={
-      d1:{PlanetRasiD1Sign:d1Arr},nak:{PlanetConstellation:nakArr2},
-      house:{HousePlanetOccupiesBasedOnSign:houseArr2},d9:{PlanetNavamshaD9Sign:d9Arr2},
-      retro:{IsPlanetRetrograde:retroArr},combust:{IsPlanetCombust:combustArr2},
-      avasta:{PlanetAvasta:avastaArr2},hSign:{HouseSignName:hSignArr2},
-      hNak:{HouseConstellation:hNakArr2},ascDeg:ascData
-    };
+    var data=await batchedCalls(endpoints);
 
     birthEp=ep;
     var h=document.getElementById('bc-hour').value,m=document.getElementById('bc-minute').value,ap=document.getElementById('bc-ampm').value;
@@ -446,10 +370,10 @@ async function generateBirthChart(e){
     document.getElementById('kundali-results').style.display='block';
     renderKundali(data,lt);
 
-    // Load dasha async — only 3 calls used so far, dasha is 4th (within 5/min limit)
+    // Load dasha async (don't block chart rendering)
     var endYr=String(parseInt(lt.year)+100);
     document.getElementById('dasha-content').innerHTML='<p style="color:var(--ink-dim)">Loading Dasha data...</p>';
-    var dashaWait=localStorage.getItem('vedastro_api_key')?0:500;
+    var dashaWait=localStorage.getItem('vedastro_api_key')?0:62000;
     setTimeout(function(){
       callAPI('DasaAtRange/'+ep+'/'+ep+'/'+locTimeStrYear(lt,endYr)+'/Levels/2/PrecisionHours/720')
         .then(function(dashaData){renderCurrentDashaSummary(dashaData);renderDasha(dashaData);})
